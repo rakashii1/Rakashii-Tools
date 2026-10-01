@@ -185,6 +185,7 @@
     .clip-estimate strong { color: #f2f6fb; font-size: 0.82rem; font-variant-numeric: tabular-nums; }
     .clip-estimate-note { grid-column: 1 / -1; color: #748396; font-size: 0.7rem; }
     .timeline-actions { display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-top: 16px; }
+    .clip-estimate-action { flex: 0 1 180px; min-width: 150px; min-height: 40px; padding: 0 10px; border: 1px solid #2d3948; border-radius: 8px; background: #151b23; }
     .quality-control { display: inline-flex; align-items: center; gap: 8px; color: #9ca8b8; font-size: 0.8rem; font-weight: 750; }
     .quality-control select { height: 40px; padding: 0 30px 0 10px; border: 1px solid #385064; border-radius: 8px; background: #1c2430; color: #f2f6fb; font: inherit; font-weight: 750; }
     .quality-control select:focus { border-color: #71e4ec; outline: none; box-shadow: 0 0 0 2px rgba(113, 228, 236, 0.13); }
@@ -236,6 +237,10 @@
       .preview-stage video { max-height: calc(100vh - 360px); }
       .clip-estimates { grid-template-columns: 1fr; }
       .clip-estimate-note { grid-column: auto; }
+      .timeline-actions { justify-content: stretch; flex-wrap: wrap; }
+      .timeline-actions .quality-control { flex: 1 1 calc(50% - 6px); min-width: 0; }
+      .timeline-actions .quality-control select { min-width: 0; flex: 1; }
+      .clip-estimate-action, .timeline-actions .primary-button { flex: 1 1 100%; width: 100%; }
       .processing-panel { right: 12px; bottom: 12px; width: calc(100% - 24px); }
       .cache-settings-heading { align-items: flex-start; flex-direction: column; gap: 4px; }
       .cache-settings-row { align-items: stretch; flex-direction: column; }
@@ -357,11 +362,10 @@
           </div>
           <div class="timeline-times"><span id="startTimeLabel">VIDEO START 00:00:00</span><span id="durationLabel">VIDEO END 00:00:30</span></div>
           <div class="clip-estimates" aria-live="polite">
-            <div class="clip-estimate"><span>Estimated clip size</span><strong id="estimatedClipSize">Calculating...</strong></div>
             <div class="clip-estimate"><span>Estimated trim time</span><strong id="estimatedTrimTime">Calculating...</strong></div>
             <span class="clip-estimate-note" id="estimateNote">Approximate values based on the source video and selected quality.</span>
           </div>
-          <div class="timeline-actions"><label class="quality-control" for="qualitySelect">Quality<select id="qualitySelect" aria-label="Output quality"><option value="original">Original (no re-encode)</option><option value="high">High (better detail)</option><option value="balanced">Balanced</option><option value="smaller">Smaller file</option></select></label><label class="quality-control" for="powerSelect">Device power<select id="powerSelect" aria-label="Device processing power"><option value="0.5">50% (cooler)</option><option value="0.75">75% (recommended)</option><option value="1" selected>100% (fastest)</option></select></label><button class="primary-button" id="modalClipButton" type="button">Clip selected part</button></div>
+          <div class="timeline-actions"><label class="quality-control" for="qualitySelect">Quality<select id="qualitySelect" aria-label="Output quality"><option value="original">Original (no re-encode)</option><option value="high">High (better detail)</option><option value="balanced">Balanced</option><option value="smaller">Smaller file</option></select></label><label class="quality-control" for="powerSelect">Device power<select id="powerSelect" aria-label="Device processing power"><option value="0.5">50% (cooler)</option><option value="0.75">75% (recommended)</option><option value="1" selected>100% (fastest)</option></select></label><div class="clip-estimate clip-estimate-action" aria-live="polite"><span>Estimated clip size</span><strong id="estimatedClipSize">Calculating...</strong></div><button class="primary-button" id="modalClipButton" type="button">Clip selected part</button></div>
         </div>
       </div>
     </section>
@@ -945,6 +949,10 @@
         throw error;
       }
     }
+    function raceTrimCancellation(operation, job) {
+      if (!job?.cancelPromise) return operation;
+      return Promise.race([operation, job.cancelPromise]);
+    }
     function cancelTrimJob(job) {
       if (!job) return;
       if (job.finished || job.cancelRequested) {
@@ -964,12 +972,17 @@
         clientTrimJobs.delete(job.cacheKey);
         modalClipButton.disabled = false;
         setMessage("Queued clip canceled.");
+        void runNextClientTrim();
         return;
       }
       try { job.cancelRequest?.(); } catch {}
+      try { job.resetClientEngine?.(); } catch {}
       if (job.nativeJobId) {
         void fetch(`${nativeHelperUrl}/api/jobs/${encodeURIComponent(job.nativeJobId)}`, { method: "DELETE", cache: "no-store" }).catch(() => {});
       }
+      const cancelError = new Error("Clip canceled.");
+      cancelError.code = "TRIM_CANCELLED";
+      job.cancelReject?.(cancelError);
       updateProcessingCard(job, Number(job.percent.textContent.replace("%", "")) || 0, "Canceling...", job.file.name);
       job.cancelButton.disabled = true;
       setMessage("Canceling the clip...");
@@ -1381,7 +1394,16 @@
         "-b:a", audioBitrate,
         "-threads", threadArgument,
       ];
-      if (job) job.cancelRequest = () => { try { ffmpeg.terminate?.(); } catch {} };
+      if (job) {
+        job.cancelRequest = () => { try { void ffmpeg.terminate?.(); } catch {} };
+        job.resetClientEngine = () => {
+          if (clientFfmpeg === ffmpeg) {
+            clientFfmpeg = null;
+            clientFfmpegPromise = null;
+            clientFfmpegMultithread = false;
+          }
+        };
+      }
       report(39, "Preparing the source in the video engine...", file.name);
       // Fresh downloads are copied into the page cache before this transfer;
       // cache hits already return a disposable copy for the worker.
@@ -1725,6 +1747,9 @@
       }
     }
     async function runTrimJob(job) {
+      let rejectCancellation;
+      job.cancelPromise = new Promise((_, reject) => { rejectCancellation = reject; });
+      job.cancelReject = rejectCancellation;
       let targetProgress = 0;
       let displayedProgress = 0;
       let progressTimer = null;
@@ -1750,49 +1775,52 @@
         if (!progressTimer) progressTimer = window.setInterval(tickProgress, 80);
       };
       const waitForDisplayedProgress = async (value) => {
-        while (displayedProgress < value) await new Promise(resolve => window.setTimeout(resolve, 60));
+        while (displayedProgress < value) {
+          throwIfTrimCancelled(job);
+          await new Promise(resolve => window.setTimeout(resolve, 60));
+        }
       };
       try {
         throwIfTrimCancelled(job);
-        let blob = await getTrimCache(job);
+        let blob = await raceTrimCancellation(getTrimCache(job), job);
         throwIfTrimCancelled(job);
         const fromCache = Boolean(blob);
         if (fromCache) {
           report(100, "Clip loaded from temporary cache.", job.file.name);
         } else {
           if (isLocalSelfHost) {
-            blob = await clipOnLocalServer(job.file, job.start, job.end, job.quality, report, job);
+            blob = await raceTrimCancellation(clipOnLocalServer(job.file, job.start, job.end, job.quality, report, job), job);
           } else {
             if (await getNativeHelper()) {
               try {
-                blob = await clipWithNativeHelper(job.file, job.start, job.end, job.quality, report, job);
+                blob = await raceTrimCancellation(clipWithNativeHelper(job.file, job.start, job.end, job.quality, report, job), job);
               } catch (error) {
                 throwIfTrimCancelled(job);
                 report(2, "Native trimmer unavailable; using the browser trimmer...", job.file.name);
                 try {
-                  blob = await clipOnDevice(job.file, job.start, job.end, job.quality, job.power, report, false, job);
+                  blob = await raceTrimCancellation(clipOnDevice(job.file, job.start, job.end, job.quality, job.power, report, false, job), job);
                 } catch (browserError) {
                   throwIfTrimCancelled(job);
                   const detail = browserError?.message || String(browserError || error || "");
                   if (!/unwind|startsWith|multi-core|pthread/i.test(detail)) throw browserError;
                   report(2, "Multi-core engine failed; retrying with compatible engine...", job.file.name);
-                  blob = await clipOnDevice(job.file, job.start, job.end, job.quality, job.power, report, true, job);
+                  blob = await raceTrimCancellation(clipOnDevice(job.file, job.start, job.end, job.quality, job.power, report, true, job), job);
                 }
               }
             } else {
               try {
-                blob = await clipOnDevice(job.file, job.start, job.end, job.quality, job.power, report, false, job);
+                blob = await raceTrimCancellation(clipOnDevice(job.file, job.start, job.end, job.quality, job.power, report, false, job), job);
               } catch (error) {
                 throwIfTrimCancelled(job);
                 const detail = error?.message || String(error || "");
                 if (!/unwind|startsWith|multi-core|pthread/i.test(detail)) throw error;
                 report(2, "Multi-core engine failed; retrying with compatible engine...", job.file.name);
-                blob = await clipOnDevice(job.file, job.start, job.end, job.quality, job.power, report, true, job);
+                blob = await raceTrimCancellation(clipOnDevice(job.file, job.start, job.end, job.quality, job.power, report, true, job), job);
               }
             }
           }
           throwIfTrimCancelled(job);
-          if (!blob?.desktopDownloadUrl) await storeTrimCache(job, blob);
+          if (!blob?.desktopDownloadUrl) await raceTrimCancellation(storeTrimCache(job, blob), job);
         }
         const filename = `${job.file.name.replace(/\.[^.]+$/, "")}-clip.mp4`;
         const desktopDownloadUrl = blob?.desktopDownloadUrl;
@@ -1845,13 +1873,20 @@
         setMessage(message, true);
       } finally {
         if (progressTimer) window.clearInterval(progressTimer);
+        job.cancelReject = null;
+        job.cancelPromise = null;
         modalClipButton.disabled = false;
       }
     }
     async function runNextClientTrim() {
       if (clientTrimRunning || !clientTrimQueue.length) return;
       clientTrimRunning = true;
-      const job = clientTrimQueue.shift();
+      let job = clientTrimQueue.shift();
+      while (job && (job.finished || job.cancelRequested || job.cancelled)) job = clientTrimQueue.shift();
+      if (!job) {
+        clientTrimRunning = false;
+        return;
+      }
       try {
         await runTrimJob(job);
       } finally {
@@ -1864,9 +1899,13 @@
       const cacheKey = trimJobKey({ file, start, end, quality, power });
       const existingJob = clientTrimJobs.get(cacheKey);
       if (existingJob) {
-        existingJob.card.scrollIntoView({ behavior: "smooth", block: "nearest" });
-        setMessage("This exact clip is already processing or is ready in the progress panel.");
-        return;
+        if (existingJob.cancelRequested || existingJob.cancelled) {
+          removeProcessingJob(existingJob);
+        } else {
+          existingJob.card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          setMessage("This exact clip is already processing or is ready in the progress panel.");
+          return;
+        }
       }
       modalClipButton.disabled = true;
       closePreview();
