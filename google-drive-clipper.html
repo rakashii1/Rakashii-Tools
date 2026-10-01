@@ -257,7 +257,7 @@
     html.mobile-compact h1 { font-size: 1.15rem; }
     html.mobile-compact .subtitle { max-width: 300px; font-size: 0.75rem; }
     html.mobile-compact .topbar-actions { flex: 1 1 auto; gap: 8px; }
-    html.mobile-compact .connection-card { flex: 1 1 auto; max-width: none; padding: 4px 6px; }
+    html.mobile-compact .connection-card { flex: 1 1 auto; max-width: none; min-width: 0; padding: 4px 6px; }
     html.mobile-compact .connection-status-button, html.mobile-compact .trimmer-status { min-height: 38px; }
     html.mobile-compact .status-icon, html.mobile-compact .trimmer-status-icon { width: 26px; height: 26px; font-size: 0.68rem; }
     html.mobile-compact .status-label, html.mobile-compact .trimmer-status-label { font-size: 0.72rem; }
@@ -288,6 +288,15 @@
       html.mobile-compact .video-card-title { font-size: 0.68rem; }
       html.mobile-compact .video-card-meta { font-size: 0.57rem; }
     }
+    /* Keep the compact mobile layout inside the device width even when Chrome reports desktop mode. */
+    html.mobile-compact .topbar { align-items: stretch; flex-direction: column; }
+    html.mobile-compact .topbar-actions { align-items: stretch; flex-direction: column; overflow: visible; }
+    html.mobile-compact .topbar-actions > .outline-button { width: 100%; }
+    html.mobile-compact .connection-card { align-items: stretch; flex-direction: column; width: 100%; }
+    html.mobile-compact .connection-card .section-actions { width: 100%; }
+    html.mobile-compact .connection-card .outline-button,
+    html.mobile-compact .connection-card .connect-button { width: 100%; }
+    html.mobile-compact .trimmer-status { padding: 7px 0; border-top: 1px solid var(--line); border-left: 0; }
   </style>
   <script>
     (() => {
@@ -534,7 +543,7 @@
     let clientTrimRunning = false;
     const clientTrimJobs = new Map();
     const TRIM_CACHE_TTL_MS = 2 * 60 * 60 * 1000;
-    const TRIM_CACHE_NAME = "rakashii-trimmed-clips-v1";
+    const TRIM_CACHE_NAME = "rakashii-trimmed-clips-v2";
     const SOURCE_CACHE_TTL_MS = 2 * 60 * 60 * 1000;
     const SOURCE_CACHE_NAME = "rakashii-source-videos-v1";
     const SOURCE_CACHE_LIMIT_STORAGE_KEY = "rakashii-source-cache-limit-bytes-v1";
@@ -975,7 +984,8 @@
         cancelButton: card.querySelector(".cancel-trim-button"),
       };
       job.cancelButton.addEventListener("click", () => cancelTrimJob(job));
-      processingList.appendChild(card);
+      // Keep the newest result at the top so repeated clips are easy to identify.
+      processingList.prepend(card);
       processingPanel.hidden = false;
       updateProcessingCard(job, 0, "Starting clip job...", fileName);
       return job;
@@ -1617,6 +1627,16 @@
         job.power || "1",
       ].join("|");
     }
+    function clipTimeStamp(seconds) {
+      const value = Math.max(0, Math.round(Number(seconds) || 0));
+      const minutes = Math.floor(value / 60);
+      const remaining = value % 60;
+      return `${String(minutes).padStart(2, "0")}m${String(remaining).padStart(2, "0")}s`;
+    }
+    function clipDownloadName(job) {
+      const stem = (job.file?.name || "video").replace(/\.[^.]+$/, "");
+      return `${stem}-clip-${clipTimeStamp(job.start)}-${clipTimeStamp(job.end)}.mp4`;
+    }
     function trimCacheUrl(job) {
       const key = trimJobKey(job);
       return `${window.location.origin}/__rakashii-trim-cache/${encodeURIComponent(key)}`;
@@ -1874,7 +1894,7 @@
           throwIfTrimCancelled(job);
           if (!blob?.desktopDownloadUrl) await raceTrimCancellation(storeTrimCache(job, blob), job);
         }
-        const filename = `${job.file.name.replace(/\.[^.]+$/, "")}-clip.mp4`;
+        const filename = clipDownloadName(job);
         const desktopDownloadUrl = blob?.desktopDownloadUrl;
         if (desktopDownloadUrl) {
           job.download.href = desktopDownloadUrl;
@@ -1971,7 +1991,7 @@
         download: null,
         abortController: new AbortController(),
       };
-      const cardJob = createProcessingCard(file.name);
+      const cardJob = createProcessingCard(clipDownloadName({ file, start, end }));
       Object.assign(job, cardJob);
       clientTrimJobs.set(cacheKey, job);
       setMessage("Preparing your clip...");
@@ -2048,7 +2068,7 @@
         const card = document.createElement("button");
         card.type = "button";
         card.className = "folder-card";
-        card.innerHTML = `<span class="folder-icon" aria-hidden="true">[folder]</span><span class="folder-name"></span>`;
+        card.innerHTML = `<span class="folder-icon" aria-hidden="true">📁</span><span class="folder-name"></span>`;
         card.querySelector(".folder-name").textContent = folder.name;
         card.title = `Open ${folder.name}`;
         card.addEventListener("click", () => openFolder(folder.id, [...folderPath, { id: folder.id, name: folder.name }]));
