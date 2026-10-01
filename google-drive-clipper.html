@@ -249,7 +249,53 @@
       .settings-actions > * { width: 100%; }
     }
     @media (max-width: 400px) { .video-grid { grid-template-columns: 1fr; } }
+    /* Phones can report a desktop-sized viewport when Chrome's Desktop site is enabled. */
+    html.mobile-compact .app-shell { width: min(calc(100% - 40px), 1240px); padding-top: 20px; }
+    html.mobile-compact .topbar { gap: 12px; padding-bottom: 20px; }
+    html.mobile-compact .brand { gap: 8px; }
+    html.mobile-compact .brand-mark { width: 34px; height: 34px; border-radius: 10px; font-size: 0.64rem; }
+    html.mobile-compact h1 { font-size: 1.15rem; }
+    html.mobile-compact .subtitle { max-width: 300px; font-size: 0.75rem; }
+    html.mobile-compact .topbar-actions { flex: 1 1 auto; gap: 8px; }
+    html.mobile-compact .connection-card { flex: 1 1 auto; max-width: none; padding: 4px 6px; }
+    html.mobile-compact .connection-status-button, html.mobile-compact .trimmer-status { min-height: 38px; }
+    html.mobile-compact .status-icon, html.mobile-compact .trimmer-status-icon { width: 26px; height: 26px; font-size: 0.68rem; }
+    html.mobile-compact .status-label, html.mobile-compact .trimmer-status-label { font-size: 0.72rem; }
+    html.mobile-compact .status-help, html.mobile-compact .trimmer-status-help { font-size: 0.58rem; }
+    html.mobile-compact .connection-card .outline-button { min-height: 32px; padding: 0 9px; font-size: 0.68rem; }
+    html.mobile-compact .topbar-actions > .outline-button { min-height: 38px; padding: 0 10px; font-size: 0.72rem; }
+    html.mobile-compact .public-link-card { margin-top: 16px; padding: 14px 18px; }
+    html.mobile-compact .public-link-row { flex-direction: row; }
+    html.mobile-compact .section-heading { padding: 16px 18px; }
+    html.mobile-compact .library { margin-top: 24px; }
+    html.mobile-compact .drive-tabs { margin-bottom: 12px; }
+    html.mobile-compact .folder-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 12px; }
+    html.mobile-compact .folder-card { padding: 10px; gap: 8px; font-size: 0.78rem; }
+    html.mobile-compact .folder-icon { font-size: 1rem; }
+    html.mobile-compact .video-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 12px; }
+    html.mobile-compact .video-card { padding: 7px; border-radius: 9px; }
+    html.mobile-compact .video-card-body { padding: 8px 3px 3px; }
+    html.mobile-compact .video-card-title { font-size: 0.76rem; }
+    html.mobile-compact .video-card-meta { margin-top: 4px; font-size: 0.64rem; }
+    @media (max-width: 680px) {
+      html.mobile-compact .app-shell { width: calc(100% - 16px); padding-top: 12px; }
+      html.mobile-compact .topbar { align-items: stretch; flex-direction: column; }
+      html.mobile-compact .topbar-actions { align-items: stretch; flex-direction: row; overflow-x: auto; padding-bottom: 2px; }
+      html.mobile-compact .connection-card { min-width: 292px; }
+      html.mobile-compact .topbar-actions > .outline-button { flex: 0 0 auto; width: auto; }
+      html.mobile-compact .public-link-row { align-items: stretch; flex-direction: column; }
+      html.mobile-compact .video-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; padding: 8px; }
+      html.mobile-compact .video-card-title { font-size: 0.68rem; }
+      html.mobile-compact .video-card-meta { font-size: 0.57rem; }
+    }
   </style>
+  <script>
+    (() => {
+      const mobileUserAgent = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+      const touchDesktopMode = navigator.maxTouchPoints > 1 && matchMedia("(pointer: coarse)").matches;
+      if (mobileUserAgent || touchDesktopMode) document.documentElement.classList.add("mobile-compact");
+    })();
+  </script>
 </head>
 <body data-presence-tool="drive-clipper">
   <main class="app-shell">
