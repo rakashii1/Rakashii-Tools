@@ -261,10 +261,26 @@ def handle_get(handler, action):
         handler.end_headers()
         return
     if action == "status":
+        token_data = token_from_request(handler)
+        account = {}
+        auth_error = ""
+        if token_data:
+            try:
+                about = drive_json("about", token_data["access_token"], {"fields": "user(displayName,emailAddress,photoLink)"})
+                raw_account = about.get("user") or {}
+                account = {
+                    "displayName": raw_account.get("displayName") or raw_account.get("givenName") or raw_account.get("firstName") or raw_account.get("name") or "",
+                    "emailAddress": raw_account.get("emailAddress") or raw_account.get("email") or "",
+                    "photoLink": raw_account.get("photoLink") or raw_account.get("picture") or "",
+                }
+            except Exception as error:
+                auth_error = str(error)
         return send_json(handler, {
-            "connected": bool(token_from_request(handler)),
+            "connected": bool(token_data and not auth_error),
             "configured": oauth_configured(),
             "missing": oauth_missing(),
+            "user": account,
+            "authError": auth_error,
         })
     if action == "files":
         return handle_files(handler)

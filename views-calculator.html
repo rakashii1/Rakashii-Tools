@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rakashii Tools</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="presence.css" />
+  </head>
+  <body data-presence-tool="views-calculator">
+    <main class="app-shell">
+      <section class="calculator" aria-labelledby="page-title">
+        <div class="header">
+          <div>
+            <p class="eyebrow">Views calculator</p>
+            <h1 id="page-title">Views and Earnings Calculator</h1>
+            <p class="credit">Made by Rakashii</p>
+          </div>
+          <div class="header-actions">
+            <a class="nav-button" href="/">Tools Home</a>
+            <a class="nav-button" id="downloaderLink" href="/downloader.html">Video Downloader</a>
+            <a class="nav-button" href="/google-drive-clipper.html">Drive Clipper</a>
+            <button class="icon-button" id="resetButton" type="button" aria-label="Reset calculator" title="Reset calculator">
+              &#8634;
+            </button>
+          </div>
+        </div>
+
+        <div class="rate-grid">
+          <label class="field">
+            <span>Pay amount</span>
+            <div class="money-input">
+              <span>$</span>
+              <input id="payPerView" type="number" min="0" step="0.01" value="1.5" inputmode="decimal" />
+            </div>
+          </label>
+
+          <label class="field">
+            <span>Per views</span>
+            <div class="views-input">
+              <input id="perViews" type="number" min="1" step="1" value="1000" inputmode="numeric" />
+              <span>views</span>
+            </div>
+          </label>
+
+          <label class="field">
+            <span>Tax percentage</span>
+            <div class="percent-input">
+              <input id="taxRate" type="number" min="0" step="0.01" value="7" inputmode="decimal" />
+              <span>%</span>
+            </div>
+          </label>
+
+          <label class="field">
+            <span>Show earnings in</span>
+            <select id="currencySelect">
+              <option value="PHP" selected>PHP - Philippine Peso</option>
+              <option value="USD">USD - US Dollar</option>
+              <option value="EUR">EUR - Euro</option>
+              <option value="GBP">GBP - British Pound</option>
+              <option value="JPY">JPY - Japanese Yen</option>
+              <option value="CAD">CAD - Canadian Dollar</option>
+              <option value="AUD">AUD - Australian Dollar</option>
+              <option value="SGD">SGD - Singapore Dollar</option>
+              <option value="KRW">KRW - South Korean Won</option>
+              <option value="INR">INR - Indian Rupee</option>
+            </select>
+          </label>
+        </div>
+
+        <p class="rate-status" id="rateStatus">Loading exchange rate...</p>
+
+        <section class="views-panel" aria-labelledby="views-title">
+          <div class="panel-header">
+            <h2 id="views-title">View batches</h2>
+            <button id="addViewButton" type="button">
+              <span>+ Add next views</span>
+              <small>(ENTER)</small>
+            </button>
+          </div>
+
+          <div class="batch-heading" aria-hidden="true">
+            <span></span>
+            <span>Views</span>
+            <span>Earned</span>
+            <span>Actions</span>
+          </div>
+          <div class="view-list" id="viewList"></div>
+        </section>
+
+        <section class="totals" aria-label="Calculator totals">
+          <div>
+            <span>Total views</span>
+            <strong id="totalViews">0</strong>
+          </div>
+          <div>
+            <span>Gross pay</span>
+            <strong id="grossPay">$0.00</strong>
+          </div>
+          <div>
+            <span>Tax</span>
+            <strong id="taxAmount">$0.00</strong>
+          </div>
+          <div class="net-total">
+            <span>Net pay</span>
+            <strong id="netPay">$0.00</strong>
+          </div>
+        </section>
+      </section>
+
+      <section class="simple-calculator" aria-labelledby="simple-calculator-title">
+        <div class="simple-calculator-header">
+          <div>
+            <p class="eyebrow">Quick calculator</p>
+            <h2 id="simple-calculator-title">Calculator</h2>
+          </div>
+          <button class="calc-history-toggle" id="calcHistoryToggle" type="button" aria-expanded="false" aria-controls="calcHistoryPanel">
+            History
+          </button>
+        </div>
+
+        <div class="calc-history-panel" id="calcHistoryPanel" hidden>
+          <div class="calc-history-panel-header">
+            <h3>Calculation history</h3>
+            <button class="calc-history-clear" id="clearCalcHistory" type="button">Clear</button>
+          </div>
+          <div class="calc-history-list" id="calcHistoryList" aria-live="polite">
+            <p class="calc-history-empty">No calculations yet.</p>
+          </div>
+        </div>
+
+        <div class="calc-body">
+          <div class="calc-display-wrap">
+            <output class="calc-history" id="calcHistory" aria-live="polite"></output>
+            <input id="calcDisplay" class="calc-display" type="text" value="0" inputmode="decimal" aria-label="Calculator display" />
+          </div>
+
+          <div class="calc-keypad" aria-label="Calculator buttons">
+            <button type="button" data-calc="clear">C</button>
+            <button type="button" data-calc="backspace">DEL</button>
+            <button type="button" data-calc="percent">%</button>
+            <button class="calc-operator" type="button" data-calc-operator="/">/</button>
+            <button type="button" data-calc-number="7">7</button>
+            <button type="button" data-calc-number="8">8</button>
+            <button type="button" data-calc-number="9">9</button>
+            <button class="calc-operator" type="button" data-calc-operator="*">x</button>
+            <button type="button" data-calc-number="4">4</button>
+            <button type="button" data-calc-number="5">5</button>
+            <button type="button" data-calc-number="6">6</button>
+            <button class="calc-operator" type="button" data-calc-operator="-">-</button>
+            <button type="button" data-calc-number="1">1</button>
+            <button type="button" data-calc-number="2">2</button>
+            <button type="button" data-calc-number="3">3</button>
+            <button class="calc-operator" type="button" data-calc-operator="+">+</button>
+            <button type="button" data-calc="sign">+/-</button>
+            <button type="button" data-calc-number="0">0</button>
+            <button type="button" data-calc="decimal">.</button>
+            <button class="calc-equals" type="button" data-calc="equals">=</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+    <script src="presence.js"></script>
+    <script>
+      const downloaderLink = document.querySelector("#downloaderLink");
+      if (window.location.protocol === "file:") {
+        downloaderLink.href = "http://127.0.0.1:4173/downloader";
+      }
+    </script>
+  </body>
+</html>

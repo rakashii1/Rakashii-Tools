@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Google Drive Clipper | Rakashii Tools</title>
+  <link rel="stylesheet" href="presence.css">
   <style>
     :root {
       --ink: #f2f6fb;
@@ -39,6 +40,21 @@
     .connection-status-button { display: flex; flex: 1 1 auto; align-items: center; gap: 8px; min-width: 0; padding: 0; border: 0; background: transparent; color: var(--ink); text-align: left; }
     .connection-status-button:hover .status-label, .connection-status-button:focus-visible .status-label { color: #71e4ec; }
     .connection-status-button:focus-visible { outline: 2px solid #71e4ec; outline-offset: 5px; border-radius: 5px; }
+    .trimmer-status { display: flex; align-items: center; gap: 7px; min-width: 0; padding: 0 8px; border-left: 1px solid var(--line); }
+    .trimmer-status-icon { display: grid; flex: 0 0 auto; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: #fff7ed; color: #c2410c; font-size: 0.72rem; font-weight: 900; }
+    .trimmer-status.is-running .trimmer-status-icon { background: #ecfdf3; color: var(--green); }
+    .trimmer-status.is-error .trimmer-status-icon { background: #fff1f2; color: #dc2626; }
+    .trimmer-status-label, .trimmer-status-help { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .trimmer-status-label { color: var(--ink); font-size: 0.72rem; font-weight: 850; }
+    .trimmer-status-help { margin-top: 1px; color: var(--muted); font-size: 0.62rem; }
+    .settings-service-status { display: flex; align-items: center; gap: 10px; padding: 14px; border: 1px solid var(--line); border-radius: 8px; background: rgba(28, 36, 48, 0.7); }
+    .settings-service-copy { display: grid; gap: 4px; min-width: 0; flex: 1; }
+    .settings-service-label { color: var(--muted); font-size: 0.72rem; font-weight: 750; }
+    .settings-service-name { color: var(--ink); font-size: 0.95rem; font-weight: 850; }
+    .settings-service-help { color: var(--muted); font-size: 0.78rem; line-height: 1.4; }
+    .settings-service-status.is-running { border-color: rgba(83, 209, 143, 0.42); }
+    .settings-service-status.is-error { border-color: rgba(255, 123, 123, 0.5); background: rgba(255, 123, 123, 0.08); }
+    .settings-service-status .trimmer-status-icon { width: 30px; height: 30px; font-size: 0.78rem; }
     .cache-settings-card { display: grid; gap: 12px; margin-top: 16px; padding: 16px 20px; border: 1px solid var(--line); border-radius: 12px; background: rgba(21, 27, 35, 0.8); }
     .cache-settings-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
     .cache-settings-heading h2 { margin: 0; color: var(--ink); font-size: 0.94rem; }
@@ -201,6 +217,7 @@
       .connection-card { align-items: stretch; flex-direction: column; }
       .connection-card .section-actions { width: 100%; }
       .connection-card .connect-button { flex: 1; width: auto; }
+      .trimmer-status { padding: 7px 0; border-top: 1px solid var(--line); border-left: 0; }
       .connection-status-button { min-height: 34px; }
       .public-link-heading { align-items: flex-start; flex-direction: column; gap: 4px; }
       .public-link-row { align-items: stretch; flex-direction: column; }
@@ -225,7 +242,7 @@
     @media (max-width: 400px) { .video-grid { grid-template-columns: 1fr; } }
   </style>
 </head>
-<body>
+<body data-presence-tool="drive-clipper">
   <main class="app-shell">
     <header class="topbar">
       <div class="brand">
@@ -238,6 +255,10 @@
             <span class="status-icon" id="statusIcon" aria-hidden="true">OK</span>
             <span class="status-copy"><span class="status-label" id="status">Checking Google Drive connection...</span><span class="status-help" id="statusHelp">Your videos stay in Google Drive.</span></span>
           </button>
+          <div class="trimmer-status" id="trimmerStatus" title="Native trimmer status">
+            <span class="trimmer-status-icon" id="trimmerStatusIcon" aria-hidden="true">?</span>
+            <span><span class="trimmer-status-label" id="trimmerStatusLabel">Checking trimmer...</span><span class="trimmer-status-help" id="trimmerStatusHelp">Local FFmpeg service</span></span>
+          </div>
           <div class="section-actions"><a class="connect-button" id="connect" href="/api/drive?action=auth">Connect Google Drive</a><button class="outline-button" id="driveSettingsButton" type="button">Settings</button></div>
         </section>
         <a class="outline-button" href="/" aria-label="Go to Rakashii Tools">Rakashii Tools</a>
@@ -276,6 +297,11 @@
         <span class="settings-account-label">Google Drive account</span>
         <strong class="settings-account-name" id="settingsAccountName">Not connected</strong>
         <span class="settings-account-email" id="settingsAccountEmail">Sign in to see your account.</span>
+      </div>
+      <div class="settings-service-status" id="trimmerSettingsStatus">
+        <span class="trimmer-status-icon" id="trimmerSettingsIcon" aria-hidden="true">?</span>
+        <span class="settings-service-copy"><span class="settings-service-label">Local video trimmer</span><strong class="settings-service-name" id="trimmerSettingsLabel">Checking trimmer...</strong><span class="settings-service-help" id="trimmerSettingsHelp">Checking whether the native FFmpeg service is available.</span></span>
+        <button class="outline-button" id="refreshTrimmerStatus" type="button">Check again</button>
       </div>
       <div class="settings-error" id="settingsError" hidden>
         <strong class="settings-error-title">Google Drive needs attention</strong>
@@ -357,6 +383,15 @@
     const settingsAccountEmail = document.querySelector("#settingsAccountEmail");
     const settingsError = document.querySelector("#settingsError");
     const settingsErrorMessage = document.querySelector("#settingsErrorMessage");
+    const trimmerStatus = document.querySelector("#trimmerStatus");
+    const trimmerStatusIcon = document.querySelector("#trimmerStatusIcon");
+    const trimmerStatusLabel = document.querySelector("#trimmerStatusLabel");
+    const trimmerStatusHelp = document.querySelector("#trimmerStatusHelp");
+    const trimmerSettingsStatus = document.querySelector("#trimmerSettingsStatus");
+    const trimmerSettingsIcon = document.querySelector("#trimmerSettingsIcon");
+    const trimmerSettingsLabel = document.querySelector("#trimmerSettingsLabel");
+    const trimmerSettingsHelp = document.querySelector("#trimmerSettingsHelp");
+    const refreshTrimmerStatusButton = document.querySelector("#refreshTrimmerStatus");
     const refreshButton = document.querySelector("#refresh");
     const myDriveTab = document.querySelector("#myDriveTab");
     const sharedDriveTab = document.querySelector("#sharedDriveTab");
@@ -523,6 +558,34 @@
       if (!helper) nativeHelperPromise = null;
       return helper;
     }
+    function setTrimmerStatus(running, message = "") {
+      const label = running ? "Trimmer is running" : "Trimmer is not running";
+      const help = running ? "Native FFmpeg is ready" : message || "Start the native trimmer app.";
+      trimmerStatus.classList.toggle("is-running", running);
+      trimmerStatus.classList.toggle("is-error", !running);
+      trimmerStatusIcon.textContent = running ? "OK" : "!";
+      trimmerStatusLabel.textContent = label;
+      trimmerStatusHelp.textContent = help;
+      trimmerStatus.title = running ? "The native FFmpeg trimmer is ready." : "Start RakashiiNativeTrimmer, then check again.";
+      trimmerSettingsStatus.classList.toggle("is-running", running);
+      trimmerSettingsStatus.classList.toggle("is-error", !running);
+      trimmerSettingsIcon.textContent = running ? "OK" : "!";
+      trimmerSettingsLabel.textContent = label;
+      trimmerSettingsHelp.textContent = running ? "The native FFmpeg service is ready for faster local trimming." : `${help} Open RakashiiNativeTrimmer and click Check again.`;
+    }
+    let trimmerStatusProbe = null;
+    async function refreshTrimmerStatus() {
+      if (trimmerStatusProbe) return trimmerStatusProbe;
+      trimmerStatusProbe = (async () => {
+        trimmerStatusLabel.textContent = "Checking trimmer...";
+        trimmerSettingsLabel.textContent = "Checking trimmer...";
+        const helper = await getNativeHelper();
+        setTrimmerStatus(Boolean(helper), helper ? "Native FFmpeg is ready" : "Start the native trimmer app.");
+      })().catch(() => setTrimmerStatus(false, "Start the native trimmer app." )).finally(() => {
+        trimmerStatusProbe = null;
+      });
+      return trimmerStatusProbe;
+    }
     function uploadSourceToNativeHelper(sourceKey, data, fileName, report) {
       return new Promise((resolve, reject) => {
         const url = `${nativeHelperUrl}/api/source?key=${encodeURIComponent(sourceKey)}&fileName=${encodeURIComponent(fileName || "video.mp4")}`;
@@ -576,8 +639,15 @@
         report(status.progress || 40, `Trimming with native FFmpeg${status.encoder ? ` (${status.encoder})` : ""}...`, file.name);
       }
     }
-    function firstName(displayName) {
-      return String(displayName || "").trim().split(/\s+/)[0] || "there";
+    function accountDisplayName(account = driveAccount) {
+      return account?.displayName || account?.givenName || account?.firstName || account?.name || "";
+    }
+    function firstName(displayName, emailAddress = "") {
+      const display = String(displayName || "").trim();
+      if (display) return display.split(/\s+/)[0];
+      const emailName = String(emailAddress || "").split("@")[0].replace(/[._-]+/g, " ").trim();
+      if (!emailName) return "there";
+      return emailName.split(/\s+/)[0].replace(/^./, letter => letter.toUpperCase());
     }
     function isDriveAuthError(message) {
       return /invalid authentication|invalid credentials|unauthorized|unauthenticated|access token|login cookie|expected oauth|401/i.test(String(message || ""));
@@ -586,9 +656,10 @@
       if (details.user) driveAccount = details.user;
       if (connected || Object.prototype.hasOwnProperty.call(details, "authError")) driveAuthError = details.authError || "";
       const authError = Boolean(details.authError || driveAuthError);
-      const accountName = driveAccount?.displayName || "Not connected";
+      const displayName = accountDisplayName();
+      const accountName = displayName || "Not connected";
       const accountEmail = driveAccount?.emailAddress || (connected ? "Google Drive account" : "Sign in to see your account.");
-      status.textContent = connected ? `Hi, ${firstName(driveAccount?.displayName)}` : authError ? "Google Drive needs attention" : message || "Not connected";
+      status.textContent = connected ? `Hi, ${firstName(displayName, accountEmail)}` : authError ? "Google Drive needs attention" : message || "Not connected";
       statusHelp.textContent = connected ? `Google Drive connected${driveAccount?.emailAddress ? ` · ${driveAccount.emailAddress}` : ""}` : authError ? "Please log in again." : "Connect your account to browse videos.";
       statusIcon.textContent = connected ? "OK" : authError ? "!" : "?";
       statusIcon.style.background = connected ? "#ecfdf3" : authError ? "#fff1f2" : "#fff7ed";
@@ -599,7 +670,7 @@
       connect.hidden = connected && !authError;
       connect.textContent = authError ? "Log in again" : "Connect Google Drive";
       logout.hidden = !connected && !authError;
-      settingsAccountName.textContent = connected ? `Hi, ${firstName(driveAccount?.displayName)}` : accountName;
+      settingsAccountName.textContent = connected ? `Hi, ${firstName(displayName, accountEmail)}` : accountName;
       settingsAccountEmail.textContent = accountEmail;
       settingsError.hidden = !authError;
       settingsErrorMessage.textContent = driveAuthError || "Your Google Drive session is no longer valid.";
@@ -607,6 +678,7 @@
     function openSettings() {
       settingsModal.hidden = false;
       showSourceCacheLimit();
+      void refreshTrimmerStatus();
       closeSettingsButton.focus();
     }
     function closeSettings() {
@@ -1968,6 +2040,7 @@
     refreshButton.addEventListener("click", load);
     driveSettingsButton.addEventListener("click", openSettings);
     connectionStatusButton.addEventListener("click", openSettings);
+    refreshTrimmerStatusButton.addEventListener("click", refreshTrimmerStatus);
     closeSettingsButton.addEventListener("click", closeSettings);
     settingsDoneButton.addEventListener("click", closeSettings);
     settingsModal.addEventListener("click", event => { if (event.target === settingsModal) closeSettings(); });
@@ -2095,8 +2168,11 @@
       event.preventDefault();
       connectDesktopThroughBrowser();
     });
+    void refreshTrimmerStatus();
+    window.setInterval(refreshTrimmerStatus, 10000);
     if (window.location.protocol === "file:") { connect.href = "/api/drive?action=auth"; setConnectionState(false, "Open this page through Rakashii Tools"); statusHelp.textContent = "Open the deployed Rakashii Tools URL instead of this file URL."; }
     else check();
   </script>
+  <script src="presence.js"></script>
 </body>
 </html>

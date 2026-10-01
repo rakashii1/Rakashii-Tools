@@ -40,6 +40,145 @@ select {
   padding: 48px 0;
 }
 
+.home-shell {
+  width: min(1120px, calc(100% - 32px));
+}
+
+.home-hero {
+  padding: clamp(24px, 5vw, 48px);
+}
+
+.home-header {
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--line);
+}
+
+.brand-lockup {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(45, 183, 196, 0.14);
+  color: var(--accent);
+  font-size: 0.74rem;
+  font-weight: 900;
+}
+
+.home-version {
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.home-heading {
+  max-width: 680px;
+  margin-top: clamp(34px, 7vw, 72px);
+}
+
+.home-heading h1 {
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.6rem);
+  line-height: 1.05;
+}
+
+.home-description {
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 1rem;
+}
+
+.tool-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 34px;
+}
+
+.tool-card {
+  display: flex;
+  min-width: 0;
+  min-height: 260px;
+  flex-direction: column;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(28, 36, 48, 0.72);
+  color: var(--ink);
+  text-decoration: none;
+  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+}
+
+.tool-card:hover,
+.tool-card:focus-visible {
+  border-color: rgba(45, 183, 196, 0.68);
+  background: rgba(28, 48, 58, 0.78);
+  outline: none;
+  transform: translateY(-2px);
+}
+
+.tool-card-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: rgba(45, 183, 196, 0.14);
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+
+.tool-card-content {
+  display: grid;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+.tool-card-label {
+  color: var(--accent);
+  font-size: 0.74rem;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.tool-card-title {
+  font-size: 1.15rem;
+  line-height: 1.2;
+}
+
+.tool-card-description {
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.tool-card-action {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 24px;
+  color: var(--accent);
+  font-size: 0.84rem;
+  font-weight: 850;
+}
+
+.home-footer {
+  margin: 18px 0 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-align: center;
+}
+
 .calculator {
   background: rgba(21, 27, 35, 0.95);
   border: 1px solid rgba(45, 57, 72, 0.95);
@@ -588,6 +727,14 @@ select {
 
   .header-actions {
     width: 100%;
+  }
+
+  .tool-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .tool-card {
+    min-height: 220px;
   }
 
   .nav-button {
