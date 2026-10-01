@@ -649,8 +649,6 @@
       trimmerStatusProbe = (async () => {
         // Keep the native helper's browser heartbeat alive while this page is open.
         nativeHelperPromise = null;
-        trimmerStatusLabel.textContent = "Checking trimmer...";
-        trimmerSettingsLabel.textContent = "Checking trimmer...";
         const helper = await getNativeHelper();
         setTrimmerStatus(Boolean(helper), helper ? "Native FFmpeg is ready" : "Start the native trimmer app.");
       })().catch(() => setTrimmerStatus(false, "Start the native trimmer app." )).finally(() => {
