@@ -109,9 +109,17 @@
   color: var(--muted, #9ca8b8);
 }
 
+.presence-badge.is-hidden-mobile {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(8px);
+  visibility: hidden;
+}
+
 @media (max-width: 640px) {
   .presence-badge {
     left: 12px;
     bottom: 12px;
+    transition: opacity 160ms ease, transform 160ms ease, visibility 160ms ease;
   }
 }

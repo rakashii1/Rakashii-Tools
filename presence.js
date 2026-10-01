@@ -64,6 +64,34 @@
     badge.setAttribute("aria-expanded", String(visible));
   }
 
+  const mobileViewport = window.matchMedia("(max-width: 640px)");
+  let mediaPlaying = false;
+  function syncMobilePlaybackVisibility() {
+    const hidden = mobileViewport.matches && mediaPlaying;
+    badge.classList.toggle("is-hidden-mobile", hidden);
+    if (hidden) setDetailsVisible(false);
+  }
+  function isMediaElement(target) {
+    return target?.tagName === "VIDEO";
+  }
+  document.addEventListener("play", event => {
+    if (!isMediaElement(event.target)) return;
+    mediaPlaying = true;
+    syncMobilePlaybackVisibility();
+  }, true);
+  document.addEventListener("pause", event => {
+    if (!isMediaElement(event.target)) return;
+    mediaPlaying = false;
+    syncMobilePlaybackVisibility();
+  }, true);
+  document.addEventListener("ended", event => {
+    if (!isMediaElement(event.target)) return;
+    mediaPlaying = false;
+    syncMobilePlaybackVisibility();
+  }, true);
+  mobileViewport.addEventListener?.("change", syncMobilePlaybackVisibility);
+  syncMobilePlaybackVisibility();
+
   async function sendHeartbeat() {
     try {
       const response = await fetch(endpoint, {

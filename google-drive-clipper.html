@@ -546,7 +546,13 @@
             const controller = new AbortController();
             const timeout = window.setTimeout(() => controller.abort(), 1200);
             try {
-              const response = await fetch(`${candidate}/api/health`, { cache: "no-store", signal: controller.signal, headers: { "X-Rakashii-Client": "browser" } });
+              // Keep the health probe a simple request so mobile Chrome can
+              // reach the loopback helper without an unnecessary custom-header preflight.
+              const response = await fetch(`${candidate}/api/health?client=browser`, {
+                cache: "no-store",
+                credentials: "omit",
+                signal: controller.signal,
+              });
               const data = await response.json().catch(() => ({}));
               if (response.ok && data.ok === true) {
                 nativeHelperUrl = candidate;
