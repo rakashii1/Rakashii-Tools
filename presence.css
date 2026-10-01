@@ -1,0 +1,68 @@
+.presence-badge {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  z-index: 1000;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid rgba(45, 183, 196, 0.36);
+  border-radius: 8px;
+  background: rgba(21, 27, 35, 0.96);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  color: var(--muted, #9ca8b8);
+  font-size: 0.82rem;
+  font-weight: 750;
+  pointer-events: none;
+  backdrop-filter: blur(10px);
+}
+
+.presence-mark {
+  position: relative;
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+  color: var(--accent, #2db7c4);
+}
+
+.presence-user-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.presence-count {
+  color: var(--ink, #f2f6fb);
+}
+
+.presence-dot {
+  position: absolute;
+  top: -2px;
+  right: -3px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #53d18f;
+  box-shadow: 0 0 0 3px rgba(83, 209, 143, 0.14);
+}
+
+.presence-badge[data-status="offline"] {
+  border-color: rgba(156, 168, 184, 0.36);
+}
+
+.presence-badge[data-status="offline"] .presence-dot {
+  background: var(--muted, #9ca8b8);
+  box-shadow: none;
+}
+
+.presence-badge[data-status="offline"] .presence-mark {
+  color: var(--muted, #9ca8b8);
+}
+
+@media (max-width: 640px) {
+  .presence-badge {
+    left: 12px;
+    bottom: 12px;
+  }
+}

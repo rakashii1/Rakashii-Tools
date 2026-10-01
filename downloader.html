@@ -1,0 +1,740 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rakashii Tools</title>
+    <link rel="stylesheet" href="presence.css" />
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0d1117;
+        --panel: #151b23;
+        --panel-soft: #1c2430;
+        --ink: #f2f6fb;
+        --muted: #9ca8b8;
+        --line: #2d3948;
+        --accent: #2db7c4;
+        --accent-dark: #1e8d98;
+        --danger: #ff7b7b;
+        --success: #53d18f;
+        --shadow: 0 24px 70px rgba(0, 0, 0, 0.36);
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background:
+          radial-gradient(circle at top left, rgba(45, 183, 196, 0.22), transparent 32rem),
+          linear-gradient(135deg, #0d1117 0%, #121823 52%, #17141f 100%);
+        color: var(--ink);
+      }
+
+      button,
+      textarea,
+      select {
+        font: inherit;
+      }
+
+      .app-shell {
+        width: min(980px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 48px 0;
+      }
+
+      .tool {
+        background: rgba(21, 27, 35, 0.95);
+        border: 1px solid rgba(45, 57, 72, 0.95);
+        border-radius: 8px;
+        box-shadow: var(--shadow);
+        padding: clamp(20px, 4vw, 36px);
+      }
+
+      .header,
+      .nav-actions,
+      .controls,
+      .card-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .header {
+        justify-content: space-between;
+        gap: 24px;
+      }
+
+      .eyebrow {
+        margin: 0 0 8px;
+        color: var(--accent);
+        font-size: 0.82rem;
+        font-weight: 800;
+        letter-spacing: 0;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(2rem, 5vw, 3.6rem);
+        line-height: 1;
+        letter-spacing: 0;
+      }
+
+      .credit {
+        margin: 12px 0 0;
+        color: var(--muted);
+        font-size: 0.95rem;
+        font-weight: 800;
+      }
+
+      .nav-button,
+      .fetch-btn,
+      .download-all,
+      .download-btn,
+      .quality-chip {
+        border: 0;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 850;
+      }
+
+      .nav-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 44px;
+        padding: 0 14px;
+        border: 1px solid rgba(45, 183, 196, 0.36);
+        background: rgba(45, 183, 196, 0.12);
+        color: #71e4ec;
+        text-decoration: none;
+        white-space: nowrap;
+      }
+
+      .form-panel {
+        display: grid;
+        gap: 14px;
+        margin-top: 32px;
+      }
+
+      textarea {
+        width: 100%;
+        min-height: 120px;
+        resize: vertical;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        outline: 0;
+        padding: 16px;
+        background: var(--panel-soft);
+        caret-color: var(--accent);
+        color: var(--ink);
+        font-weight: 750;
+      }
+
+      textarea:focus {
+        border-color: rgba(45, 183, 196, 0.62);
+        box-shadow: 0 0 0 3px rgba(45, 183, 196, 0.12);
+      }
+
+      .hint {
+        margin: -4px 0 0;
+        color: var(--muted);
+        font-size: 0.85rem;
+        font-weight: 750;
+      }
+
+      .controls {
+        justify-content: space-between;
+        flex-wrap: wrap;
+      }
+
+      .format-toggle {
+        display: flex;
+        gap: 8px;
+      }
+
+      .format-button {
+        min-height: 42px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 0 16px;
+        background: var(--panel-soft);
+        color: var(--muted);
+        cursor: pointer;
+        font-weight: 850;
+      }
+
+      .format-button.active {
+        border-color: rgba(45, 183, 196, 0.6);
+        background: rgba(45, 183, 196, 0.14);
+        color: #71e4ec;
+      }
+
+      .fetch-btn,
+      .download-all {
+        min-height: 46px;
+        padding: 0 18px;
+        background: var(--accent);
+        color: #fff;
+      }
+
+      .fetch-btn:hover,
+      .download-all:hover {
+        background: var(--accent-dark);
+      }
+
+      .fetch-btn:disabled,
+      .download-btn:disabled,
+      .download-all:disabled {
+        cursor: not-allowed;
+        opacity: 0.48;
+      }
+
+      .cards {
+        display: grid;
+        gap: 12px;
+        margin-top: 24px;
+      }
+
+      .card {
+        display: grid;
+        grid-template-columns: 150px minmax(0, 1fr);
+        gap: 16px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 14px;
+        background: rgba(28, 36, 48, 0.72);
+      }
+
+      .thumb {
+        width: 100%;
+        aspect-ratio: 16 / 10;
+        border-radius: 8px;
+        background: rgba(13, 17, 23, 0.45);
+        overflow: hidden;
+      }
+
+      .thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .thumb-placeholder {
+        display: grid;
+        place-items: center;
+        width: 100%;
+        height: 100%;
+        color: var(--muted);
+        font-weight: 900;
+      }
+
+      .card-body {
+        min-width: 0;
+      }
+
+      .card-title {
+        overflow: hidden;
+        margin-bottom: 6px;
+        color: var(--ink);
+        font-size: 1rem;
+        font-weight: 900;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .card-meta,
+      .status {
+        color: var(--muted);
+        font-size: 0.84rem;
+        font-weight: 750;
+      }
+
+      .card-actions {
+        flex-wrap: wrap;
+        margin-top: 14px;
+      }
+
+      .download-btn {
+        min-height: 36px;
+        padding: 0 12px;
+        background: var(--panel);
+        color: var(--ink);
+        border: 1px solid var(--line);
+      }
+
+      .download-btn.done {
+        border-color: rgba(83, 209, 143, 0.42);
+        color: var(--success);
+      }
+
+      .quality-chip {
+        min-height: 32px;
+        padding: 0 10px;
+        border: 1px solid var(--line);
+        background: transparent;
+        color: var(--muted);
+      }
+
+      .quality-chip.active {
+        border-color: rgba(45, 183, 196, 0.56);
+        color: #71e4ec;
+      }
+
+      .error-card {
+        border-color: rgba(255, 123, 123, 0.35);
+        background: rgba(255, 123, 123, 0.08);
+      }
+
+      .error-text {
+        color: var(--danger);
+        font-weight: 800;
+      }
+
+      .download-all {
+        width: 100%;
+      }
+
+      @media (max-width: 720px) {
+        .app-shell {
+          width: min(100% - 20px, 980px);
+          padding: 20px 0;
+        }
+
+        .header,
+        .controls {
+          align-items: stretch;
+          flex-direction: column;
+        }
+
+        .nav-actions,
+        .format-toggle {
+          width: 100%;
+        }
+
+        .nav-button,
+        .format-button,
+        .fetch-btn {
+          flex: 1;
+          width: 100%;
+        }
+
+        .card {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="tool" aria-labelledby="page-title">
+        <div class="header">
+          <div>
+            <p class="eyebrow">Video downloader</p>
+            <h1 id="page-title">ReClip Downloader</h1>
+            <p class="credit">Paste links from YouTube, TikTok, Instagram, and more.</p>
+          </div>
+          <div class="nav-actions">
+            <a class="nav-button" href="/">Earnings Calculator</a>
+            <a class="nav-button" href="/google-drive-clipper.html">Drive Clipper</a>
+          </div>
+        </div>
+
+        <section class="form-panel" aria-label="Downloader form">
+          <textarea id="urls" placeholder="Paste one or more video links..." rows="4"></textarea>
+          <p class="hint">Multiple links can be separated by spaces, commas, or new lines.</p>
+
+          <div class="controls">
+            <div class="format-toggle" aria-label="Download format">
+              <button class="format-button active" data-format="max" type="button">Max Quality</button>
+              <button class="format-button" data-format="video" type="button">Stable MP4</button>
+              <button class="format-button" data-format="audio" type="button">MP3</button>
+            </div>
+            <button class="fetch-btn" id="goBtn" type="button">Fetch</button>
+          </div>
+        </section>
+
+        <div id="cards" class="cards"></div>
+      </section>
+    </main>
+
+    <script>
+      let currentFormat = "max";
+      let cardData = [];
+
+      const urlsInput = document.querySelector("#urls");
+      const goButton = document.querySelector("#goBtn");
+      const cards = document.querySelector("#cards");
+
+      document.querySelectorAll(".format-button").forEach((button) => {
+        button.addEventListener("click", () => {
+          const nextFormat = button.dataset.format;
+          if (nextFormat === currentFormat) return;
+
+          document.querySelectorAll(".format-button").forEach((item) => item.classList.remove("active"));
+          button.classList.add("active");
+          currentFormat = nextFormat;
+          resetCardsForFormat();
+          cardData.forEach((_, index) => renderCard(index));
+        });
+      });
+
+      goButton.addEventListener("click", go);
+      urlsInput.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" && !event.shiftKey) {
+          event.preventDefault();
+          go();
+        }
+      });
+
+      function parseUrls(text) {
+        return [...new Set(text.match(/https?:\/\/[^\s,]+/g) || [])];
+      }
+
+      function esc(value) {
+        const div = document.createElement("div");
+        div.textContent = value || "";
+        return div.innerHTML;
+      }
+
+      function fmtDur(seconds) {
+        if (!seconds) return "";
+        const minutes = Math.floor(seconds / 60);
+        const rest = Math.floor(seconds % 60);
+        return `${minutes}:${rest.toString().padStart(2, "0")}`;
+      }
+
+      function friendlyError(error) {
+        if (!error) return "Something went wrong";
+        if (error.includes("API returned a page instead of JSON")) return "Downloader API is not deployed correctly. Redeploy the latest files.";
+        if (error.includes("Unsupported URL")) return "This URL is not supported";
+        if (error.includes("Video unavailable")) return "Video is unavailable or private";
+        if (error.includes("Private video")) return "This video is private";
+        if (error.includes("HTTP Error 403")) return "Access denied by the platform";
+        if (error.includes("HTTP Error 404")) return "Video not found";
+        if (error.includes("timed out") || error.includes("Timed out")) return "Request timed out. Try again.";
+        return error.length > 96 ? `${error.slice(0, 96)}...` : error;
+      }
+
+      async function readJson(response) {
+        const text = await response.text();
+        try {
+          return JSON.parse(text);
+        } catch {
+          const preview = text.trim().slice(0, 80) || response.statusText;
+          throw new Error(`API returned a page instead of JSON (${response.status}): ${preview}`);
+        }
+      }
+
+      function filenameFromResponse(response, fallback) {
+        const disposition = response.headers.get("Content-Disposition") || "";
+        const match = disposition.match(/filename="?([^"]+)"?/i);
+        return match ? match[1] : fallback;
+      }
+
+      function resetCardsForFormat() {
+        cardData.forEach((card) => {
+          if (!["ready", "downloading", "done", "error"].includes(card.status)) return;
+          if (card.blobUrl) URL.revokeObjectURL(card.blobUrl);
+          card.status = "ready";
+          card.error = null;
+          card.jobId = null;
+          card.filename = null;
+          card.blobUrl = null;
+          card.downloadedFormat = null;
+          card.requestKey = null;
+        });
+      }
+
+      async function go() {
+        const urls = parseUrls(urlsInput.value);
+        if (!urls.length) return;
+
+        goButton.disabled = true;
+        goButton.textContent = "Loading...";
+        cards.innerHTML = "";
+        cardData = [];
+
+        for (let index = 0; index < urls.length; index += 1) {
+          if (urls[index].includes("list=")) {
+            try {
+              const response = await fetch("/api/playlist", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ url: urls[index] }),
+              });
+              const data = await readJson(response);
+              if (data.urls) urls.splice(index, 1, ...data.urls);
+            } catch {}
+          }
+        }
+
+        for (const url of urls) {
+          const index = cardData.length;
+          cardData.push({ url, status: "loading" });
+          renderCard(index);
+
+          try {
+            const response = await fetch("/api/info", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ url }),
+            });
+            const data = await readJson(response);
+
+            if (data.error) {
+              cardData[index] = { ...cardData[index], status: "info-error", error: data.error };
+            } else {
+              cardData[index] = {
+                ...cardData[index],
+                status: "ready",
+                title: data.title || "",
+                thumbnail: data.thumbnail || "",
+                duration: data.duration,
+                uploader: data.uploader || "",
+                formats: data.formats || [],
+                selectedFormatId: data.formats?.[0]?.id || null,
+              };
+            }
+          } catch (error) {
+            cardData[index] = { ...cardData[index], status: "info-error", error: error.message };
+          }
+
+          renderCard(index);
+        }
+
+        if (cardData.filter((card) => card.status === "ready").length > 1) {
+          renderDownloadAll();
+        }
+
+        goButton.disabled = false;
+        goButton.textContent = "Fetch";
+      }
+
+      function renderCard(index) {
+        const card = cardData[index];
+        let element = document.querySelector(`#card-${index}`);
+        if (!element) {
+          element = document.createElement("div");
+          element.id = `card-${index}`;
+          element.className = "card";
+          cards.append(element);
+        }
+
+        if (card.status === "loading") {
+          element.className = "card";
+          element.innerHTML = `
+            <div class="thumb"><div class="thumb-placeholder">Loading</div></div>
+            <div class="card-body">
+              <div class="card-title">Fetching video info...</div>
+              <div class="card-meta">${esc(card.url)}</div>
+            </div>
+          `;
+          return;
+        }
+
+        if (card.status === "info-error") {
+          element.className = "card error-card";
+          element.innerHTML = `
+            <div class="thumb"><div class="thumb-placeholder">Error</div></div>
+            <div class="card-body">
+              <div class="card-title error-text">Could not fetch video</div>
+              <div class="card-meta">${esc(card.url)}</div>
+              <div class="status error-text">${esc(friendlyError(card.error))}</div>
+            </div>
+          `;
+          return;
+        }
+
+        const isAudio = currentFormat === "audio";
+        const thumb = isAudio
+          ? `<div class="thumb-placeholder">MP3</div>`
+          : card.thumbnail
+            ? `<img src="${esc(card.thumbnail)}" alt="">`
+            : `<div class="thumb-placeholder">MAX</div>`;
+
+        const chips = !isAudio && card.formats?.length > 1
+          ? card.formats.map((format) =>
+              `<button class="quality-chip${format.id === card.selectedFormatId ? " active" : ""}" type="button" onclick="pickFormat(${index}, '${format.id}')">${format.label}</button>`
+            ).join("")
+          : "";
+
+        let actions = "";
+        if (card.status === "ready") {
+          actions = `<button class="download-btn" type="button" onclick="downloadCard(${index})">Download</button>${chips}`;
+        } else if (card.status === "downloading") {
+          actions = `<span class="status">Downloading...</span>`;
+        } else if (card.status === "done") {
+          actions = `<button class="download-btn done" type="button" onclick="saveCard(${index})">Save</button><span class="status">${esc(card.filename || "")}</span>`;
+        } else if (card.status === "error") {
+          actions = `<button class="download-btn" type="button" onclick="downloadCard(${index})">Retry</button><span class="status error-text">${esc(friendlyError(card.error))}</span>`;
+        }
+
+        element.className = "card";
+        element.innerHTML = `
+          <div class="thumb">${thumb}</div>
+          <div class="card-body">
+            <div class="card-title">${esc(card.title || "Untitled")}</div>
+            <div class="card-meta">${esc(card.uploader)}${card.duration ? " - " + fmtDur(card.duration) : ""}</div>
+            <div class="card-actions">${actions}</div>
+          </div>
+        `;
+      }
+
+      function renderDownloadAll() {
+        const existing = document.querySelector("#downloadAll");
+        if (existing) existing.remove();
+
+        const button = document.createElement("button");
+        button.id = "downloadAll";
+        button.className = "download-all";
+        button.type = "button";
+        button.textContent = "Download All";
+        button.addEventListener("click", downloadAll);
+        cards.append(button);
+      }
+
+      function pickFormat(index, formatId) {
+        cardData[index].selectedFormatId = formatId;
+        renderCard(index);
+      }
+
+      async function downloadCard(index) {
+        const card = cardData[index];
+        const requestedFormat = currentFormat;
+        const requestKey = `${Date.now()}-${Math.random()}`;
+        card.status = "downloading";
+        card.error = null;
+        card.requestKey = requestKey;
+        renderCard(index);
+
+        try {
+          const response = await fetch("/api/download", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              url: card.url,
+              format: requestedFormat,
+              format_id: card.selectedFormatId,
+              title: card.title || "",
+            }),
+          });
+
+          if (card.requestKey !== requestKey) return;
+
+          const contentType = response.headers.get("Content-Type") || "";
+          if (!contentType.includes("application/json")) {
+            if (!response.ok) throw new Error(`Download failed (${response.status})`);
+            const blob = await response.blob();
+            if (card.requestKey !== requestKey) return;
+            const filename = filenameFromResponse(response, `${card.title || "download"}.${requestedFormat === "audio" ? "mp3" : "mkv"}`);
+            if (card.blobUrl) URL.revokeObjectURL(card.blobUrl);
+            card.status = "done";
+            card.filename = filename;
+            card.blobUrl = URL.createObjectURL(blob);
+            card.downloadedFormat = requestedFormat;
+            renderCard(index);
+            saveBlobUrl(card.blobUrl, filename);
+            return;
+          }
+
+          const data = await readJson(response);
+          if (card.requestKey !== requestKey) return;
+          if (data.error) {
+            card.status = "error";
+            card.error = data.error;
+            renderCard(index);
+            return;
+          }
+          card.jobId = data.job_id;
+          card.downloadedFormat = requestedFormat;
+          pollCard(index, requestKey);
+        } catch (error) {
+          if (card.requestKey !== requestKey) return;
+          card.status = "error";
+          card.error = error.message;
+          renderCard(index);
+        }
+      }
+
+      function pollCard(index, requestKey) {
+        const card = cardData[index];
+        const interval = setInterval(async () => {
+          if (card.requestKey !== requestKey) {
+            clearInterval(interval);
+            return;
+          }
+          try {
+            const response = await fetch(`/api/status/${card.jobId}`);
+            const data = await readJson(response);
+            if (card.requestKey !== requestKey) {
+              clearInterval(interval);
+              return;
+            }
+            if (data.status === "done") {
+              clearInterval(interval);
+              card.status = "done";
+              card.filename = data.filename;
+              renderCard(index);
+              saveCard(index);
+            } else if (data.status === "error") {
+              clearInterval(interval);
+              card.status = "error";
+              card.error = data.error;
+              renderCard(index);
+            }
+          } catch {
+            clearInterval(interval);
+            card.status = "error";
+            card.error = "Lost connection to server";
+            renderCard(index);
+          }
+        }, 1000);
+      }
+
+      function saveCard(index) {
+        const card = cardData[index];
+        if (card.blobUrl) {
+          saveBlobUrl(card.blobUrl, card.filename || "download");
+          return;
+        }
+        if (!card.jobId) return;
+        const link = document.createElement("a");
+        link.href = `/api/file/${card.jobId}`;
+        link.download = card.filename || "";
+        link.click();
+      }
+
+      function saveBlobUrl(objectUrl, filename) {
+        const link = document.createElement("a");
+        link.href = objectUrl;
+        link.download = filename || "download";
+        link.click();
+      }
+
+      async function downloadAll() {
+        const button = document.querySelector("#downloadAll");
+        if (button) {
+          button.disabled = true;
+          button.textContent = "Downloading...";
+        }
+
+        for (let index = 0; index < cardData.length; index += 1) {
+          if (cardData[index].status === "ready") {
+            await downloadCard(index);
+          }
+        }
+
+        if (button) {
+          button.disabled = false;
+          button.textContent = "Download All";
+        }
+      }
+    </script>
+    <script src="presence.js"></script>
+  </body>
+</html>
