@@ -144,7 +144,7 @@
     .close-button:hover, .close-button:focus-visible { border-color: #2db7c4; color: #f2f6fb; outline: none; }
     .modal-content { display: flex; min-height: 0; flex: 1; padding: 16px; overflow: hidden; flex-direction: column; gap: 14px; }
     .preview-stage { position: relative; overflow: hidden; border: 1px solid #385064; border-radius: 9px; background: #0a0f15; box-shadow: 0 16px 34px rgba(0, 0, 0, 0.28), inset 0 0 0 1px rgba(113, 228, 236, 0.04); }
-    .preview-stage video { display: block; width: 100%; max-height: calc(100vh - 330px); aspect-ratio: 16 / 9; background: #0a0f15; object-fit: contain; }
+    .preview-stage video { display: block; width: 70%; max-width: 70%; margin: 0 auto; max-height: calc(100vh - 330px); aspect-ratio: 16 / 9; background: #0a0f15; object-fit: contain; }
     .preview-stage video[hidden] { display: none; }
     .video-time-overlay { position: absolute; left: 14px; bottom: 66px; z-index: 4; padding: 5px 8px; border: 1px solid rgba(113, 228, 236, 0.32); border-radius: 6px; background: rgba(5, 8, 13, 0.82); color: #f2f6fb; font-size: 0.76rem; font-variant-numeric: tabular-nums; font-weight: 800; pointer-events: none; }
     .video-controls { position: absolute; right: 12px; bottom: 12px; left: 12px; z-index: 4; display: grid; grid-template-columns: auto auto auto minmax(100px, 1fr) auto auto; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid rgba(113, 228, 236, 0.2); border-radius: 8px; background: rgba(12, 20, 28, 0.92); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3); }
@@ -159,7 +159,7 @@
     .video-seek::-webkit-slider-thumb { width: 13px; height: 13px; appearance: none; border: 2px solid #f2f6fb; border-radius: 50%; background: #2db7c4; }
     .video-seek::-moz-range-thumb { width: 10px; height: 10px; border: 2px solid #f2f6fb; border-radius: 50%; background: #2db7c4; }
     .preview-stage:fullscreen { display: grid; place-items: center; background: #05080d; }
-    .preview-stage:fullscreen video { max-height: calc(100vh - 58px); }
+    .preview-stage:fullscreen video { width: 100%; max-width: 100%; max-height: calc(100vh - 58px); }
     .timeline-editor { flex: 0 0 auto; margin-top: 0; padding: 16px; border: 1px solid #2d3948; border-radius: 8px; background: #1c2430; }
     .timeline-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: #f2f6fb; font-size: 0.9rem; font-weight: 800; }
     .preview-position { display: block; margin-top: 4px; color: #9ca8b8; font-size: 0.76rem; font-weight: 650; }
@@ -235,7 +235,7 @@
       .video-modal { padding: 10px; }
       .video-modal-dialog { width: 100%; height: calc(100vh - 20px); }
       .modal-content { padding: 12px; }
-      .preview-stage video { max-height: calc(100vh - 360px); }
+      .preview-stage video { width: 100%; max-width: 100%; max-height: calc(100vh - 360px); }
       .clip-estimates { grid-template-columns: 1fr; }
       .clip-estimate-note { grid-column: auto; }
       .timeline-actions { justify-content: stretch; flex-wrap: wrap; }
