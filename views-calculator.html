@@ -18,8 +18,6 @@
           </div>
           <div class="header-actions">
             <a class="nav-button" href="/">Tools Home</a>
-            <a class="nav-button" id="downloaderLink" href="/downloader.html">Video Downloader</a>
-            <a class="nav-button" href="/google-drive-clipper.html">Drive Clipper</a>
             <button class="icon-button" id="resetButton" type="button" aria-label="Reset calculator" title="Reset calculator">
               &#8634;
             </button>
@@ -163,11 +161,5 @@
 
     <script src="script.js"></script>
     <script src="presence.js"></script>
-    <script>
-      const downloaderLink = document.querySelector("#downloaderLink");
-      if (window.location.protocol === "file:") {
-        downloaderLink.href = "http://127.0.0.1:4173/downloader";
-      }
-    </script>
   </body>
 </html>

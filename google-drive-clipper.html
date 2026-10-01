@@ -30,7 +30,6 @@
     .topbar-actions { display: flex; align-items: center; justify-content: flex-end; gap: 10px; min-width: 0; }
     .brand { display: flex; align-items: center; gap: 14px; }
     .brand-mark { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 12px; background: rgba(45, 183, 196, 0.12); color: #71e4ec; font-size: 0.72rem; font-weight: 900; letter-spacing: 0.04em; }
-    .version { margin-left: 8px; color: #71e4ec; font-size: 0.68em; font-weight: 800; letter-spacing: 0.04em; vertical-align: middle; }
     .subtitle { margin-top: 4px; color: var(--muted); font-size: 0.9rem; }
     .outline-button, .primary-button, .connect-button { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 0 15px; border-radius: 8px; font-weight: 750; text-decoration: none; }
     .outline-button { border: 1px solid rgba(45, 183, 196, 0.36); background: rgba(45, 183, 196, 0.12); color: #71e4ec; }
@@ -66,6 +65,8 @@
     .cache-settings-field select { padding: 0 28px 0 10px; }
     .cache-settings-field input:focus, .cache-settings-field select:focus { border-color: #71e4ec; outline: none; box-shadow: 0 0 0 2px rgba(113, 228, 236, 0.13); }
     .cache-settings-status { margin: 0; color: #71e4ec; font-size: 0.75rem; }
+    .download-links { display: flex; gap: 10px; flex-wrap: wrap; }
+    .download-link { display: inline-flex; align-items: center; justify-content: center; min-height: 38px; text-decoration: none; }
     .settings-modal { position: fixed; inset: 0; z-index: 25; display: grid; place-items: center; padding: 20px; background: rgba(3, 7, 12, 0.78); }
     .settings-modal[hidden] { display: none; }
     .settings-dialog { display: grid; gap: 18px; width: min(560px, 100%); max-height: min(720px, calc(100vh - 40px)); overflow-y: auto; padding: 20px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); box-shadow: var(--shadow); }
@@ -245,6 +246,7 @@
       .cache-settings-heading { align-items: flex-start; flex-direction: column; gap: 4px; }
       .cache-settings-row { align-items: stretch; flex-direction: column; }
       .cache-settings-field input, .cache-settings-field select, .cache-settings-row button { width: 100%; }
+      .download-links > * { width: 100%; }
       .settings-actions { justify-content: stretch; flex-direction: column-reverse; }
       .settings-actions > * { width: 100%; }
     }
@@ -311,7 +313,7 @@
     <header class="topbar">
       <div class="brand">
         <div class="brand-mark" aria-hidden="true">CUT</div>
-        <div><h1>Google Drive Clipper <span class="version">v.0.1</span></h1><p class="subtitle">Pick a video, set the timestamps, and download only the finished clip.</p></div>
+        <div><h1>Google Drive Clipper</h1><p class="subtitle">Pick a video, set the timestamps, and download only the finished clip.</p></div>
       </div>
       <div class="topbar-actions">
         <section class="connection-card" id="connectionCard" aria-live="polite">
@@ -367,6 +369,10 @@
         <span class="settings-service-copy"><span class="settings-service-label">Local video trimmer</span><strong class="settings-service-name" id="trimmerSettingsLabel">Checking trimmer...</strong><span class="settings-service-help" id="trimmerSettingsHelp">Checking whether the native FFmpeg service is available.</span></span>
         <button class="outline-button" id="refreshTrimmerStatus" type="button">Check again</button>
       </div>
+      <section class="cache-settings-card" aria-labelledby="trimmer-downloads-title">
+        <div class="cache-settings-heading"><h2 id="trimmer-downloads-title">Download Rakashii Trimmer</h2><p>Install the helper for your device.</p></div>
+        <div class="download-links"><a class="outline-button download-link" href="https://drive.google.com/uc?export=download&amp;id=1PEAc5m3hnNaNdW4uCbDtiiid4gGLU0eT" target="_blank" rel="noopener">Android APK</a><a class="outline-button download-link" href="https://drive.google.com/uc?export=download&amp;id=1gqnOVlpOffgfCEy9EhQ0ts83qIoGU_4d" target="_blank" rel="noopener">Desktop helper (.exe)</a></div>
+      </section>
       <div class="settings-error" id="settingsError" hidden>
         <strong class="settings-error-title">Google Drive needs attention</strong>
         <p class="settings-error-message" id="settingsErrorMessage"></p>
@@ -377,7 +383,8 @@
         <div class="cache-settings-row">
           <label class="cache-settings-field" for="sourceCacheLimitInput">Cache limit<input id="sourceCacheLimitInput" type="number" min="64" max="100" step="0.25" inputmode="decimal"></label>
           <label class="cache-settings-field" for="sourceCacheLimitUnit">Unit<select id="sourceCacheLimitUnit"><option value="MB">MB</option><option value="GB">GB</option></select></label>
-          <button class="outline-button" id="saveSourceCacheLimit" type="button">Save cache limit</button>
+          <label class="cache-settings-field" for="sourceCacheExpiry"><span>Cache expiry</span><select id="sourceCacheExpiry"><option value="3600000">1 hour</option><option value="7200000">2 hours</option><option value="21600000">6 hours</option><option value="86400000">24 hours</option></select></label>
+          <button class="outline-button" id="saveSourceCacheLimit" type="button">Save cache settings</button>
         </div>
         <p class="cache-settings-status" id="sourceCacheSettingsStatus" aria-live="polite"></p>
       </section>
@@ -488,6 +495,7 @@
     const processingList = document.querySelector("#processingList");
     const sourceCacheLimitInput = document.querySelector("#sourceCacheLimitInput");
     const sourceCacheLimitUnit = document.querySelector("#sourceCacheLimitUnit");
+    const sourceCacheExpiry = document.querySelector("#sourceCacheExpiry");
     const saveSourceCacheLimit = document.querySelector("#saveSourceCacheLimit");
     const sourceCacheSettingsStatus = document.querySelector("#sourceCacheSettingsStatus");
     const publicLink = document.querySelector("#publicLink");
@@ -520,6 +528,8 @@
     let previewTransferRate = 0;
     let suppressBufferingIndicator = false;
     let directPreviewTried = false;
+    let previewSourceLoadSequence = 0;
+    let previewObjectUrl = "";
     const isLocalSelfHost = window.location.port === "4173" || ["localhost", "127.0.0.1"].includes(window.location.hostname);
     const isDesktopShell = new URLSearchParams(window.location.search).get("desktop") === "1";
     const desktopApiReady = isDesktopShell
@@ -543,15 +553,19 @@
     let clientTrimRunning = false;
     let clientTrimRunningJob = null;
     const clientTrimJobs = new Map();
-    const TRIM_CACHE_TTL_MS = 2 * 60 * 60 * 1000;
+    const DEFAULT_CACHE_TTL_MS = 2 * 60 * 60 * 1000;
+    const CACHE_TTL_STORAGE_KEY = "rakashii-cache-ttl-ms-v1";
+    const CACHE_TTL_OPTIONS = [3600000, 7200000, 21600000, 86400000];
     const TRIM_CACHE_NAME = "rakashii-trimmed-clips-v2";
-    const SOURCE_CACHE_TTL_MS = 2 * 60 * 60 * 1000;
     const SOURCE_CACHE_NAME = "rakashii-source-videos-v1";
     const SOURCE_CACHE_LIMIT_STORAGE_KEY = "rakashii-source-cache-limit-bytes-v1";
     const DEFAULT_SOURCE_CACHE_MAX_BYTES = 3 * 1024 * 1024 * 1024;
     const MIN_SOURCE_CACHE_MAX_BYTES = 64 * 1024 * 1024;
     const MAX_SOURCE_CACHE_MAX_BYTES = 100 * 1024 * 1024 * 1024;
     let sourceCacheMaxBytes = DEFAULT_SOURCE_CACHE_MAX_BYTES;
+    let cacheTtlMs = DEFAULT_CACHE_TTL_MS;
+    let nativeCacheSettingsSyncKey = "";
+    let nativeCacheSettingsSyncPromise = null;
     const sourceMemoryCache = new Map();
     let sourceMemoryCacheBytes = 0;
 
@@ -570,13 +584,25 @@
       } catch {}
       return DEFAULT_SOURCE_CACHE_MAX_BYTES;
     }
+    function readCacheTtl() {
+      try {
+        const value = Number(localStorage.getItem(CACHE_TTL_STORAGE_KEY));
+        if (CACHE_TTL_OPTIONS.includes(value)) return value;
+      } catch {}
+      return DEFAULT_CACHE_TTL_MS;
+    }
+    function formatCacheTtl(value) {
+      const hours = value / (60 * 60 * 1000);
+      return `${hours} hour${hours === 1 ? "" : "s"}`;
+    }
     function showSourceCacheLimit() {
       const unit = sourceCacheMaxBytes >= 1024 ** 3 ? "GB" : "MB";
       const divisor = unit === "GB" ? 1024 ** 3 : 1024 ** 2;
       const value = sourceCacheMaxBytes / divisor;
       sourceCacheLimitUnit.value = unit;
       sourceCacheLimitInput.value = Number.isInteger(value) ? String(value) : value.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
-      sourceCacheSettingsStatus.textContent = `Current limit: ${formatBytes(sourceCacheMaxBytes)}. Cached sources expire after two hours.`;
+      sourceCacheExpiry.value = String(cacheTtlMs);
+      sourceCacheSettingsStatus.textContent = `Current limit: ${formatBytes(sourceCacheMaxBytes)}. Cached items expire after ${formatCacheTtl(cacheTtlMs)}.`;
     }
     function applySourceCacheLimit(bytes) {
       sourceCacheMaxBytes = bytes;
@@ -584,17 +610,30 @@
       trimMemorySourceCache();
       showSourceCacheLimit();
     }
-    async function syncNativeCacheLimit(bytes) {
-      if (!await getNativeHelper()) return;
-      try {
-        await fetch(`${nativeHelperUrl}/api/settings/cache-limit`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ limitBytes: bytes }),
-        });
-      } catch {}
+    function applyCacheTtl(value) {
+      cacheTtlMs = CACHE_TTL_OPTIONS.includes(value) ? value : DEFAULT_CACHE_TTL_MS;
+      try { localStorage.setItem(CACHE_TTL_STORAGE_KEY, String(cacheTtlMs)); } catch {}
+      showSourceCacheLimit();
+    }
+    async function syncNativeCacheSettings(bytes, ttlMs) {
+      const key = `${bytes}:${ttlMs}`;
+      if (nativeCacheSettingsSyncKey === key) return;
+      if (nativeCacheSettingsSyncPromise) return nativeCacheSettingsSyncPromise;
+      nativeCacheSettingsSyncPromise = (async () => {
+        if (!await getNativeHelper()) return;
+        try {
+          const response = await fetch(`${nativeHelperUrl}/api/settings/cache-limit`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ limitBytes: bytes, expiryMs: ttlMs }),
+          });
+          if (response.ok) nativeCacheSettingsSyncKey = key;
+        } catch {}
+      })().finally(() => { nativeCacheSettingsSyncPromise = null; });
+      return nativeCacheSettingsSyncPromise;
     }
     sourceCacheMaxBytes = readSourceCacheLimit();
+    cacheTtlMs = readCacheTtl();
     async function getNativeHelper() {
       if (!nativeHelperPromise) {
         nativeHelperPromise = (async () => {
@@ -651,6 +690,7 @@
         nativeHelperPromise = null;
         const helper = await getNativeHelper();
         setTrimmerStatus(Boolean(helper), helper ? "Native FFmpeg is ready" : "Start the native trimmer app.");
+        if (helper) void syncNativeCacheSettings(sourceCacheMaxBytes, cacheTtlMs);
       })().catch(() => setTrimmerStatus(false, "Start the native trimmer app." )).finally(() => {
         trimmerStatusProbe = null;
       });
@@ -953,18 +993,38 @@
       // Start with the range-aware proxy so shared Drive files use the same
       // reliable path as trimming. Direct Drive playback remains a fallback.
       directPreviewTried = false;
-      previewVideo.src = `${proxyPreviewUrl(file)}${resourceQuery ? `&${resourceQuery.slice(1)}` : ""}`;
+      const sourceLoadSequence = ++previewSourceLoadSequence;
+      releasePreviewObjectUrl();
+      previewVideo.removeAttribute("src");
       previewVideo.load();
+      void (async () => {
+        const cachedBlob = await getCachedSourceBlob(file);
+        if (sourceLoadSequence !== previewSourceLoadSequence || videoModal.hidden) return;
+        if (cachedBlob) {
+          previewObjectUrl = URL.createObjectURL(cachedBlob);
+          previewVideo.src = previewObjectUrl;
+        } else {
+          previewVideo.src = `${proxyPreviewUrl(file)}${resourceQuery ? `&${resourceQuery.slice(1)}` : ""}`;
+        }
+        previewVideo.load();
+      })();
       setMessage("Drag the handles to choose the clip.");
     }
     function closePreview() {
+      previewSourceLoadSequence++;
       videoModal.hidden = true;
       document.body.style.overflow = "";
       previewVideo.pause();
       stopPreviewLoadingStats();
       previewVideo.removeAttribute("src");
       previewVideo.load();
+      releasePreviewObjectUrl();
       syncPlayerControls();
+    }
+    function releasePreviewObjectUrl() {
+      if (!previewObjectUrl) return;
+      URL.revokeObjectURL(previewObjectUrl);
+      previewObjectUrl = "";
     }
     function createProcessingCard(fileName) {
       const card = document.createElement("article");
@@ -1679,7 +1739,7 @@
       const cachedData = new Uint8Array(data);
       sourceMemoryCache.set(key, {
         data: cachedData,
-        expiresAt: Date.now() + SOURCE_CACHE_TTL_MS,
+        expiresAt: Date.now() + cacheTtlMs,
         lastUsedAt: Date.now(),
       });
       sourceMemoryCacheBytes += cachedData.byteLength;
@@ -1759,7 +1819,7 @@
         await cache.put(trimCacheUrl(job), new Response(blob, {
           headers: {
             "Content-Type": blob.type || "video/mp4",
-            "X-Rakashii-Expires": String(Date.now() + TRIM_CACHE_TTL_MS),
+            "X-Rakashii-Expires": String(Date.now() + cacheTtlMs),
           },
         }));
       } catch {}
@@ -1790,6 +1850,27 @@
         void cleanupSourceCache(cache);
       }
     }
+    async function getCachedSourceBlob(file) {
+      const memoryData = getMemorySourceCache(file);
+      if (memoryData) return new Blob([memoryData], { type: file.mimeType || "video/mp4" });
+      const cache = await openBrowserCache(SOURCE_CACHE_NAME);
+      if (!cache) return null;
+      const url = sourceCacheUrl(file);
+      try {
+        const response = await cache.match(url);
+        const expires = Number(response?.headers.get("X-Rakashii-Expires") || 0);
+        if (!response || !expires || expires <= Date.now()) {
+          if (response) await cache.delete(url);
+          return null;
+        }
+        const blob = await response.blob();
+        return blob.size && blob.size <= sourceCacheMaxBytes ? blob : null;
+      } catch {
+        return null;
+      } finally {
+        void cleanupSourceCache(cache);
+      }
+    }
     async function storeSourceCache(file, data) {
       if (!data?.byteLength || data.byteLength > sourceCacheMaxBytes) return;
       try {
@@ -1812,7 +1893,7 @@
         await cache.put(sourceCacheUrl(file), new Response(new Blob([data], { type: mimeType }), {
           headers: {
             "Content-Type": mimeType,
-            "X-Rakashii-Expires": String(Date.now() + SOURCE_CACHE_TTL_MS),
+            "X-Rakashii-Expires": String(Date.now() + cacheTtlMs),
             "X-Rakashii-Last-Used": String(Date.now()),
           },
         }));
@@ -2308,6 +2389,12 @@
     });
     previewVideo.addEventListener("error", () => {
       stopPreviewLoadingStats();
+      if (previewObjectUrl && previewFile) {
+        releasePreviewObjectUrl();
+        previewVideo.src = proxyPreviewUrl(previewFile);
+        previewVideo.load();
+        return;
+      }
       if (!directPreviewTried && previewFile?.public && directPublicDriveUrl(previewFile)) {
         directPreviewTried = true;
         previewLoading.hidden = false;
@@ -2382,10 +2469,17 @@
         sourceCacheSettingsStatus.textContent = "Choose a limit from 64 MB to 100 GB.";
         return;
       }
+      const ttlMs = Number(sourceCacheExpiry.value);
+      if (!CACHE_TTL_OPTIONS.includes(ttlMs)) {
+        sourceCacheSettingsStatus.textContent = "Choose a cache expiry.";
+        return;
+      }
       applySourceCacheLimit(bytes);
-      sourceCacheSettingsStatus.textContent = `Browser cache limit saved: ${formatBytes(bytes)}. Existing items over the limit will be removed as the cache is cleaned.`;
+      applyCacheTtl(ttlMs);
+      sourceCacheSettingsStatus.textContent = `Cache settings saved: ${formatBytes(bytes)} limit, ${formatCacheTtl(ttlMs)} expiry.`;
       void openBrowserCache(SOURCE_CACHE_NAME).then(cache => cache && cleanupSourceCache(cache));
-      void syncNativeCacheLimit(bytes);
+      void openTrimCache().then(cache => cache && cleanupTrimCache(cache));
+      void syncNativeCacheSettings(bytes, ttlMs);
     });
     connect.addEventListener("click", event => {
       if (!isDesktopShell) return;

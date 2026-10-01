@@ -60,6 +60,7 @@ _SELECTED_VIDEO_ENCODER = None
 def trim_cache_key(file_id, resource_key, public, start, end, filename, quality):
     """Build a stable key for a temporary rendered clip."""
     value = json.dumps([
+        "v2",
         str(file_id),
         str(resource_key or ""),
         bool(public),
