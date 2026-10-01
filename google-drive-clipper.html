@@ -37,16 +37,16 @@
     .outline-button:hover, .outline-button:focus-visible { border-color: rgba(45, 183, 196, 0.58); background: rgba(45, 183, 196, 0.18); }
     .connection-card { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-width: 0; max-width: min(640px, 100%); padding: 7px 8px; border: 1px solid var(--line); border-radius: 10px; background: rgba(21, 27, 35, 0.95); box-shadow: var(--shadow); }
     .connection-card.is-error { border-color: rgba(255, 123, 123, 0.62); box-shadow: 0 0 0 2px rgba(255, 123, 123, 0.08), var(--shadow); }
-    .connection-status-button { display: flex; flex: 1 1 auto; align-items: center; gap: 8px; min-width: 0; padding: 0; border: 0; background: transparent; color: var(--ink); text-align: left; }
+    .connection-status-button { display: flex; flex: 1 1 auto; align-items: center; gap: 8px; min-width: 0; min-height: 44px; padding: 0; border: 0; background: transparent; color: var(--ink); text-align: left; }
     .connection-status-button:hover .status-label, .connection-status-button:focus-visible .status-label { color: #71e4ec; }
     .connection-status-button:focus-visible { outline: 2px solid #71e4ec; outline-offset: 5px; border-radius: 5px; }
-    .trimmer-status { display: flex; align-items: center; gap: 7px; min-width: 0; padding: 0 8px; border-left: 1px solid var(--line); }
-    .trimmer-status-icon { display: grid; flex: 0 0 auto; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: #fff7ed; color: #c2410c; font-size: 0.72rem; font-weight: 900; }
+    .trimmer-status { display: flex; align-items: center; gap: 8px; min-width: 0; min-height: 44px; padding: 0 8px; border-left: 1px solid var(--line); }
+    .trimmer-status-icon { display: grid; flex: 0 0 auto; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: #fff7ed; color: #c2410c; font-size: 0.8rem; font-weight: 900; }
     .trimmer-status.is-running .trimmer-status-icon { background: #ecfdf3; color: var(--green); }
     .trimmer-status.is-error .trimmer-status-icon { background: #fff1f2; color: #dc2626; }
     .trimmer-status-label, .trimmer-status-help { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .trimmer-status-label { color: var(--ink); font-size: 0.72rem; font-weight: 850; }
-    .trimmer-status-help { margin-top: 1px; color: var(--muted); font-size: 0.62rem; }
+    .trimmer-status-label { color: var(--ink); font-size: 0.82rem; font-weight: 850; }
+    .trimmer-status-help { margin-top: 1px; color: var(--muted); font-size: 0.68rem; }
     .settings-service-status { display: flex; align-items: center; gap: 10px; padding: 14px; border: 1px solid var(--line); border-radius: 8px; background: rgba(28, 36, 48, 0.7); }
     .settings-service-copy { display: grid; gap: 4px; min-width: 0; flex: 1; }
     .settings-service-label { color: var(--muted); font-size: 0.72rem; font-weight: 750; }
@@ -197,8 +197,12 @@
     .processing-list { display: flex; flex-direction: column; gap: 8px; }
     .processing-card { padding: 15px; border: 1px solid rgba(45, 183, 196, 0.48); border-radius: 8px; background: #151b23; box-shadow: 0 16px 42px rgba(0, 0, 0, 0.36); }
     .processing-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .processing-heading { display: flex; align-items: center; gap: 8px; min-width: 0; }
     .processing-title { font-size: 0.9rem; font-weight: 850; }
     .processing-percent { color: #71e4ec; font-size: 0.9rem; font-weight: 900; font-variant-numeric: tabular-nums; }
+    .cancel-trim-button { display: inline-grid; place-items: center; width: 24px; height: 24px; padding: 0; border: 1px solid rgba(255, 123, 123, 0.48); border-radius: 6px; background: rgba(255, 123, 123, 0.08); color: #ff9b9b; font-size: 1rem; font-weight: 850; line-height: 1; }
+    .cancel-trim-button:hover, .cancel-trim-button:focus-visible { border-color: #ff7b7b; background: rgba(255, 123, 123, 0.16); color: #ffb3b3; outline: none; }
+    .cancel-trim-button[hidden] { display: none; }
     .processing-file { margin-top: 5px; overflow: hidden; color: #9ca8b8; font-size: 0.76rem; text-overflow: ellipsis; white-space: nowrap; }
     .progress-track { height: 8px; margin-top: 13px; overflow: hidden; border-radius: 99px; background: #0d1117; }
     .progress-bar { position: relative; width: 0; height: 100%; border-radius: inherit; background: #2db7c4; transition: width 260ms ease; }
@@ -218,7 +222,7 @@
       .connection-card .section-actions { width: 100%; }
       .connection-card .connect-button { flex: 1; width: auto; }
       .trimmer-status { padding: 7px 0; border-top: 1px solid var(--line); border-left: 0; }
-      .connection-status-button { min-height: 34px; }
+      .connection-status-button { min-height: 44px; }
       .public-link-heading { align-items: flex-start; flex-direction: column; gap: 4px; }
       .public-link-row { align-items: stretch; flex-direction: column; }
       .section-actions { width: 100%; justify-content: space-between; }
@@ -586,10 +590,12 @@
       });
       return trimmerStatusProbe;
     }
-    function uploadSourceToNativeHelper(sourceKey, data, fileName, report) {
+    function uploadSourceToNativeHelper(sourceKey, data, fileName, report, job) {
       return new Promise((resolve, reject) => {
         const url = `${nativeHelperUrl}/api/source?key=${encodeURIComponent(sourceKey)}&fileName=${encodeURIComponent(fileName || "video.mp4")}`;
         const xhr = new XMLHttpRequest();
+        const cancelUpload = () => xhr.abort();
+        if (job) job.cancelRequest = cancelUpload;
         xhr.open("PUT", url);
         xhr.setRequestHeader("Content-Type", "application/octet-stream");
         xhr.upload.onprogress = event => {
@@ -603,21 +609,27 @@
           else reject(new Error(data.error || `The native trimmer rejected the source (HTTP ${xhr.status}).`));
         };
         xhr.onerror = () => reject(new Error("The native trimmer could not receive the source video."));
+        xhr.onabort = () => reject(Object.assign(new Error("Clip canceled."), { code: "TRIM_CANCELLED" }));
+        xhr.onloadend = () => { if (job?.cancelRequest === cancelUpload) job.cancelRequest = null; };
         xhr.send(data);
       });
     }
-    async function clipWithNativeHelper(file, start, end, quality, report) {
+    async function clipWithNativeHelper(file, start, end, quality, report, job) {
+      throwIfTrimCancelled(job);
       const sourceKey = sourceCacheKey(file);
       const statusUrl = `${nativeHelperUrl}/api/source/status?key=${encodeURIComponent(sourceKey)}`;
       let sourceStatus = await fetch(statusUrl, { cache: "no-store" }).then(response => response.json());
+      throwIfTrimCancelled(job);
       if (!sourceStatus.cached) {
-        const input = await downloadForClient(file, report, 25, 38);
+        const input = await downloadForClient(file, report, 25, 38, job);
+        throwIfTrimCancelled(job);
         report(38, "Preparing the native trimmer...", file.name);
-        await uploadSourceToNativeHelper(sourceKey, input, file.name, report);
+        await uploadSourceToNativeHelper(sourceKey, input, file.name, report, job);
         sourceStatus = { cached: true };
       } else {
         report(38, "Using the native trimmer's cached source...", file.name);
       }
+      throwIfTrimCancelled(job);
       const response = await fetch(`${nativeHelperUrl}/api/trim`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -625,15 +637,22 @@
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || "The native trimmer could not start.");
+      if (job) {
+        job.nativeJobId = data.jobId;
+        job.cancelRequest = () => { void fetch(`${nativeHelperUrl}/api/jobs/${encodeURIComponent(data.jobId)}`, { method: "DELETE", cache: "no-store" }).catch(() => {}); };
+      }
       while (true) {
         await new Promise(resolve => window.setTimeout(resolve, 500));
+        throwIfTrimCancelled(job);
         const statusResponse = await fetch(`${nativeHelperUrl}/api/jobs/${encodeURIComponent(data.jobId)}`, { cache: "no-store" });
         const status = await statusResponse.json().catch(() => ({}));
         if (!statusResponse.ok) throw new Error(status.error || "Could not read native trim progress.");
         if (status.status === "error") throw new Error(status.error || "The native trim failed.");
+        if (status.status === "cancelled") throw Object.assign(new Error("Clip canceled."), { code: "TRIM_CANCELLED" });
         if (status.status === "done") {
           const clipResponse = await fetch(`${nativeHelperUrl}/api/jobs/${encodeURIComponent(data.jobId)}/file`);
           if (!clipResponse.ok) throw new Error("The native clip could not be downloaded.");
+          if (job) job.cancelRequest = null;
           return clipResponse.blob();
         }
         report(status.progress || 40, `Trimming with native FFmpeg${status.encoder ? ` (${status.encoder})` : ""}...`, file.name);
@@ -885,7 +904,7 @@
       const card = document.createElement("article");
       card.className = "processing-card";
       card.innerHTML = `
-        <div class="processing-header"><span class="processing-title">Trimming your clip</span><span class="processing-percent">0%</span></div>
+        <div class="processing-header"><span class="processing-heading"><span class="processing-title">Trimming your clip</span><button class="cancel-trim-button" type="button" title="Cancel trimming" aria-label="Cancel trimming">&#x2715;</button></span><span class="processing-percent">0%</span></div>
         <div class="processing-file"></div>
         <div class="progress-track"><div class="progress-bar"></div></div>
         <div class="processing-status">Starting clip job...</div>
@@ -897,7 +916,9 @@
         bar: card.querySelector(".progress-bar"),
         status: card.querySelector(".processing-status"),
         download: card.querySelector(".download-result"),
+        cancelButton: card.querySelector(".cancel-trim-button"),
       };
+      job.cancelButton.addEventListener("click", () => cancelTrimJob(job));
       processingList.appendChild(card);
       processingPanel.hidden = false;
       updateProcessingCard(job, 0, "Starting clip job...", fileName);
@@ -909,6 +930,49 @@
       job.bar.style.width = `${value}%`;
       job.fileLabel.textContent = fileName || "Preparing video...";
       job.status.textContent = status;
+    }
+    function removeProcessingJob(job) {
+      if (!job) return;
+      if (job.download?.href?.startsWith("blob:")) URL.revokeObjectURL(job.download.href);
+      clientTrimJobs.delete(job.cacheKey);
+      job.card.remove();
+      if (!processingList.children.length) processingPanel.hidden = true;
+    }
+    function throwIfTrimCancelled(job) {
+      if (job?.cancelRequested) {
+        const error = new Error("Clip canceled.");
+        error.code = "TRIM_CANCELLED";
+        throw error;
+      }
+    }
+    function cancelTrimJob(job) {
+      if (!job) return;
+      if (job.finished || job.cancelRequested) {
+        removeProcessingJob(job);
+        return;
+      }
+      job.cancelRequested = true;
+      try { job.abortController?.abort(); } catch {}
+      const queuedIndex = clientTrimQueue.indexOf(job);
+      if (queuedIndex >= 0) {
+        clientTrimQueue.splice(queuedIndex, 1);
+        job.finished = true;
+        job.cancelled = true;
+        updateProcessingCard(job, 0, "Canceled.", job.file.name);
+        job.cancelButton.title = "Remove canceled job";
+        job.cancelButton.setAttribute("aria-label", "Remove canceled job");
+        clientTrimJobs.delete(job.cacheKey);
+        modalClipButton.disabled = false;
+        setMessage("Queued clip canceled.");
+        return;
+      }
+      try { job.cancelRequest?.(); } catch {}
+      if (job.nativeJobId) {
+        void fetch(`${nativeHelperUrl}/api/jobs/${encodeURIComponent(job.nativeJobId)}`, { method: "DELETE", cache: "no-store" }).catch(() => {});
+      }
+      updateProcessingCard(job, Number(job.percent.textContent.replace("%", "")) || 0, "Canceling...", job.file.name);
+      job.cancelButton.disabled = true;
+      setMessage("Canceling the clip...");
     }
     function directPublicDriveUrl(file) {
       if (!file?.id) return "";
@@ -1130,7 +1194,7 @@
       }
       return clientFfmpegPromise;
     }
-    async function downloadClientRanges(url, total, fileName, report, progressStart, progressEnd) {
+    async function downloadClientRanges(url, total, fileName, report, progressStart, progressEnd, job) {
       const rangeSize = 32 * 1024 * 1024;
       const rangeCount = Math.ceil(total / rangeSize);
       const concurrency = Math.min(4, rangeCount);
@@ -1140,6 +1204,7 @@
       const downloadStartedAt = performance.now();
       const readRange = async () => {
         while (true) {
+          throwIfTrimCancelled(job);
           const rangeIndex = nextRange;
           nextRange += 1;
           if (rangeIndex >= rangeCount) return;
@@ -1147,6 +1212,7 @@
           const end = Math.min(total - 1, start + rangeSize - 1);
           const response = await fetch(url, {
             cache: "no-store",
+            signal: job?.abortController?.signal,
             headers: {
               Accept: "video/*,application/octet-stream;q=0.9,*/*;q=0.1",
               Range: `bytes=${start}-${end}`,
@@ -1167,6 +1233,7 @@
           } else {
             const reader = response.body.getReader();
             while (true) {
+              throwIfTrimCancelled(job);
               const part = await reader.read();
               if (part.done) break;
               data.set(part.value, start + rangeLoaded);
@@ -1196,8 +1263,10 @@
       await Promise.all(Array.from({ length: concurrency }, () => readRange()));
       return data;
     }
-    async function downloadForClient(file, report = () => {}, progressStart = 8, progressEnd = 38) {
+    async function downloadForClient(file, report = () => {}, progressStart = 8, progressEnd = 38, job) {
+      throwIfTrimCancelled(job);
       const cachedSource = await getSourceCache(file, report);
+      throwIfTrimCancelled(job);
       if (cachedSource) return cachedSource;
       // The proxy preserves Drive's video response and avoids confirmation HTML
       // or browser CORS failures from direct Drive download URLs.
@@ -1209,6 +1278,7 @@
       const fetchSource = async (url) => {
         const response = await fetch(url, {
           cache: "no-store",
+          signal: job?.abortController?.signal,
           headers: { Accept: "video/*,application/octet-stream;q=0.9,*/*;q=0.1" },
         });
         const contentType = (response.headers.get("content-type") || "").toLowerCase();
@@ -1237,7 +1307,7 @@
       if (response.body && total >= 64 * 1024 * 1024 && supportsRanges) {
         await response.body.cancel().catch(() => {});
         try {
-          const data = await downloadClientRanges(selectedUrl, total, file.name, report, progressStart, progressEnd);
+          const data = await downloadClientRanges(selectedUrl, total, file.name, report, progressStart, progressEnd, job);
           await storeSourceCache(file, data);
           return data;
         } catch (error) {
@@ -1255,6 +1325,7 @@
       let loaded = 0;
       const downloadStartedAt = performance.now();
       while (true) {
+        throwIfTrimCancelled(job);
         const part = await reader.read();
         if (part.done) break;
         chunks.push(part.value);
@@ -1283,11 +1354,14 @@
       const powerRatio = Math.max(0.5, Math.min(1, Number(power) || 1));
       return Math.max(1, Math.round(logicalThreads * powerRatio));
     }
-    async function clipOnDevice(file, start, end, quality, power, report, forceSingleCore = false) {
+    async function clipOnDevice(file, start, end, quality, power, report, forceSingleCore = false, job) {
+      throwIfTrimCancelled(job);
       report(2, "Loading the on-device trimmer...", file.name);
       const ffmpeg = await loadClientFfmpeg(file.name, report, forceSingleCore);
+      throwIfTrimCancelled(job);
       report(25, "Downloading the video to this device...", file.name);
-      const input = await downloadForClient(file, report, 25, 38);
+      const input = await downloadForClient(file, report, 25, 38, job);
+      throwIfTrimCancelled(job);
       const extension = (file.name?.match(/\.[^.]+$/)?.[0] || ".mp4").toLowerCase().replace(/[^a-z0-9.]/g, "") || ".mp4";
       const inputName = `input${extension}`;
       const outputName = "trimmed-clip.mp4";
@@ -1307,6 +1381,7 @@
         "-b:a", audioBitrate,
         "-threads", threadArgument,
       ];
+      if (job) job.cancelRequest = () => { try { ffmpeg.terminate?.(); } catch {} };
       report(39, "Preparing the source in the video engine...", file.name);
       // Fresh downloads are copied into the page cache before this transfer;
       // cache hits already return a disposable copy for the worker.
@@ -1337,6 +1412,7 @@
       ffmpeg.on("log", logListener);
       ffmpeg.on("progress", progressListener);
       try {
+        throwIfTrimCancelled(job);
         const trimArgs = [
           "-ss", String(start),
           "-i", inputName,
@@ -1346,12 +1422,14 @@
         ];
         const outputArgs = quality === "original" ? [] : ["-movflags", "+faststart"];
         report(40, usingReencode ? encodeStatus : "Cutting without re-encoding...", file.name);
+        throwIfTrimCancelled(job);
         let exitCode = await ffmpeg.exec([
           ...trimArgs,
           ...(quality === "original" ? copyArgs : encodeArgs),
           ...outputArgs,
           outputName,
         ]);
+        throwIfTrimCancelled(job);
         if (exitCode !== 0 && quality === "original") {
           await ffmpeg.deleteFile(outputName).catch(() => {});
           usingReencode = true;
@@ -1364,6 +1442,7 @@
             "-movflags", "+faststart",
             outputName,
           ]);
+          throwIfTrimCancelled(job);
         }
         if (Number.isFinite(exitCode) && exitCode !== 0) {
           const detail = logLines[logLines.length - 1] || "FFmpeg could not read this video.";
@@ -1674,39 +1753,45 @@
         while (displayedProgress < value) await new Promise(resolve => window.setTimeout(resolve, 60));
       };
       try {
+        throwIfTrimCancelled(job);
         let blob = await getTrimCache(job);
+        throwIfTrimCancelled(job);
         const fromCache = Boolean(blob);
         if (fromCache) {
           report(100, "Clip loaded from temporary cache.", job.file.name);
         } else {
           if (isLocalSelfHost) {
-            blob = await clipOnLocalServer(job.file, job.start, job.end, job.quality, report);
+            blob = await clipOnLocalServer(job.file, job.start, job.end, job.quality, report, job);
           } else {
             if (await getNativeHelper()) {
               try {
-                blob = await clipWithNativeHelper(job.file, job.start, job.end, job.quality, report);
+                blob = await clipWithNativeHelper(job.file, job.start, job.end, job.quality, report, job);
               } catch (error) {
+                throwIfTrimCancelled(job);
                 report(2, "Native trimmer unavailable; using the browser trimmer...", job.file.name);
                 try {
-                  blob = await clipOnDevice(job.file, job.start, job.end, job.quality, job.power, report);
+                  blob = await clipOnDevice(job.file, job.start, job.end, job.quality, job.power, report, false, job);
                 } catch (browserError) {
+                  throwIfTrimCancelled(job);
                   const detail = browserError?.message || String(browserError || error || "");
                   if (!/unwind|startsWith|multi-core|pthread/i.test(detail)) throw browserError;
                   report(2, "Multi-core engine failed; retrying with compatible engine...", job.file.name);
-                  blob = await clipOnDevice(job.file, job.start, job.end, job.quality, job.power, report, true);
+                  blob = await clipOnDevice(job.file, job.start, job.end, job.quality, job.power, report, true, job);
                 }
               }
             } else {
               try {
-                blob = await clipOnDevice(job.file, job.start, job.end, job.quality, job.power, report);
+                blob = await clipOnDevice(job.file, job.start, job.end, job.quality, job.power, report, false, job);
               } catch (error) {
+                throwIfTrimCancelled(job);
                 const detail = error?.message || String(error || "");
                 if (!/unwind|startsWith|multi-core|pthread/i.test(detail)) throw error;
                 report(2, "Multi-core engine failed; retrying with compatible engine...", job.file.name);
-                blob = await clipOnDevice(job.file, job.start, job.end, job.quality, job.power, report, true);
+                blob = await clipOnDevice(job.file, job.start, job.end, job.quality, job.power, report, true, job);
               }
             }
           }
+          throwIfTrimCancelled(job);
           if (!blob?.desktopDownloadUrl) await storeTrimCache(job, blob);
         }
         const filename = `${job.file.name.replace(/\.[^.]+$/, "")}-clip.mp4`;
@@ -1732,12 +1817,25 @@
         }
         job.download.download = filename;
         job.download.hidden = false;
+        job.finished = true;
+        job.cancelButton.disabled = false;
+        job.cancelButton.title = "Remove finished clip";
+        job.cancelButton.setAttribute("aria-label", "Remove finished clip");
         report(100, fromCache ? "Clip loaded from temporary cache." : "Clip ready on this device.", filename);
         await waitForDisplayedProgress(100);
         setMessage(fromCache ? "Clip loaded from the temporary cache." : "Clip created on this device. Download it from the progress panel.");
       } catch (error) {
         clientTrimJobs.delete(job.cacheKey);
+        job.finished = true;
+        job.cancelled = job.cancelRequested || error?.code === "TRIM_CANCELLED";
         const detail = error?.message || String(error || "");
+        if (job.cancelled) {
+          updateProcessingCard(job, 0, "Canceled.", job.file.name);
+          job.cancelButton.disabled = false;
+          job.cancelButton.title = "Remove canceled job";
+          job.cancelButton.setAttribute("aria-label", "Remove canceled job");
+          return;
+        }
         const message = detail && detail !== "[object Object]"
           ? `The browser could not start the trimmer: ${detail}`
           : "The browser could not start the trimmer. Refresh and try again.";
@@ -1747,15 +1845,19 @@
         setMessage(message, true);
       } finally {
         if (progressTimer) window.clearInterval(progressTimer);
+        modalClipButton.disabled = false;
       }
     }
     async function runNextClientTrim() {
       if (clientTrimRunning || !clientTrimQueue.length) return;
       clientTrimRunning = true;
       const job = clientTrimQueue.shift();
-      await runTrimJob(job);
-      clientTrimRunning = false;
-      runNextClientTrim();
+      try {
+        await runTrimJob(job);
+      } finally {
+        clientTrimRunning = false;
+        void runNextClientTrim();
+      }
     }
     function startClipJob(file, start, end, quality, power) {
       if (!file) return;
@@ -1776,6 +1878,7 @@
         power,
         cacheKey,
         download: null,
+        abortController: new AbortController(),
       };
       const cardJob = createProcessingCard(file.name);
       Object.assign(job, cardJob);
