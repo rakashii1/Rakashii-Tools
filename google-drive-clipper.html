@@ -541,6 +541,7 @@
     let clientFfmpegMultithread = false;
     let clientTrimQueue = [];
     let clientTrimRunning = false;
+    let clientTrimRunningJob = null;
     const clientTrimJobs = new Map();
     const TRIM_CACHE_TTL_MS = 2 * 60 * 60 * 1000;
     const TRIM_CACHE_NAME = "rakashii-trimmed-clips-v2";
@@ -646,6 +647,8 @@
     async function refreshTrimmerStatus() {
       if (trimmerStatusProbe) return trimmerStatusProbe;
       trimmerStatusProbe = (async () => {
+        // Keep the native helper's browser heartbeat alive while this page is open.
+        nativeHelperPromise = null;
         trimmerStatusLabel.textContent = "Checking trimmer...";
         trimmerSettingsLabel.textContent = "Checking trimmer...";
         const helper = await getNativeHelper();
@@ -1022,6 +1025,11 @@
         return;
       }
       job.cancelRequested = true;
+      const cancelError = new Error("Clip canceled.");
+      cancelError.code = "TRIM_CANCELLED";
+      // Reject the queue runner first so Promise.race can release the queue
+      // even if an encoder or network request takes time to abort.
+      try { job.cancelReject?.(cancelError); } catch {}
       try { job.abortController?.abort(); } catch {}
       const queuedIndex = clientTrimQueue.indexOf(job);
       if (queuedIndex >= 0) {
@@ -1042,9 +1050,6 @@
       if (job.nativeJobId) {
         void fetch(`${nativeHelperUrl}/api/jobs/${encodeURIComponent(job.nativeJobId)}`, { method: "DELETE", cache: "no-store" }).catch(() => {});
       }
-      const cancelError = new Error("Clip canceled.");
-      cancelError.code = "TRIM_CANCELLED";
-      job.cancelReject?.(cancelError);
       updateProcessingCard(job, Number(job.percent.textContent.replace("%", "")) || 0, "Canceling...", job.file.name);
       job.cancelButton.disabled = true;
       setMessage("Canceling the clip...");
@@ -1957,11 +1962,14 @@
       while (job && (job.finished || job.cancelRequested || job.cancelled)) job = clientTrimQueue.shift();
       if (!job) {
         clientTrimRunning = false;
+        clientTrimRunningJob = null;
         return;
       }
+      clientTrimRunningJob = job;
       try {
         await runTrimJob(job);
       } finally {
+        if (clientTrimRunningJob === job) clientTrimRunningJob = null;
         clientTrimRunning = false;
         void runNextClientTrim();
       }
@@ -1981,6 +1989,10 @@
       }
       modalClipButton.disabled = true;
       closePreview();
+      if (clientTrimRunning && (!clientTrimRunningJob || clientTrimRunningJob.finished || clientTrimRunningJob.cancelled)) {
+        clientTrimRunning = false;
+        clientTrimRunningJob = null;
+      }
       const job = {
         file,
         start,
@@ -2383,7 +2395,8 @@
       connectDesktopThroughBrowser();
     });
     void refreshTrimmerStatus();
-    window.setInterval(refreshTrimmerStatus, 10000);
+    window.setInterval(refreshTrimmerStatus, 2500);
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) void refreshTrimmerStatus(); });
     if (window.location.protocol === "file:") { connect.href = "/api/drive?action=auth"; setConnectionState(false, "Open this page through Rakashii Tools"); statusHelp.textContent = "Open the deployed Rakashii Tools URL instead of this file URL."; }
     else check();
   </script>
