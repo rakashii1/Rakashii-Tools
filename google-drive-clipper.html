@@ -34,6 +34,10 @@
     .outline-button { border: 1px solid rgba(45, 183, 196, 0.36); background: rgba(45, 183, 196, 0.12); color: #71e4ec; }
     .outline-button:hover, .outline-button:focus-visible { border-color: rgba(45, 183, 196, 0.58); background: rgba(45, 183, 196, 0.18); }
     .connection-card { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-top: 28px; padding: 18px 20px; border: 1px solid var(--line); border-radius: 12px; background: rgba(21, 27, 35, 0.95); box-shadow: var(--shadow); }
+    .connection-card.is-error { border-color: rgba(255, 123, 123, 0.62); box-shadow: 0 0 0 2px rgba(255, 123, 123, 0.08), var(--shadow); }
+    .connection-status-button { display: flex; align-items: center; gap: 12px; min-width: 0; padding: 0; border: 0; background: transparent; color: var(--ink); text-align: left; }
+    .connection-status-button:hover .status-label, .connection-status-button:focus-visible .status-label { color: #71e4ec; }
+    .connection-status-button:focus-visible { outline: 2px solid #71e4ec; outline-offset: 5px; border-radius: 5px; }
     .cache-settings-card { display: grid; gap: 12px; margin-top: 16px; padding: 16px 20px; border: 1px solid var(--line); border-radius: 12px; background: rgba(21, 27, 35, 0.8); }
     .cache-settings-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
     .cache-settings-heading h2 { margin: 0; color: var(--ink); font-size: 0.94rem; }
@@ -45,10 +49,27 @@
     .cache-settings-field select { padding: 0 28px 0 10px; }
     .cache-settings-field input:focus, .cache-settings-field select:focus { border-color: #71e4ec; outline: none; box-shadow: 0 0 0 2px rgba(113, 228, 236, 0.13); }
     .cache-settings-status { margin: 0; color: #71e4ec; font-size: 0.75rem; }
+    .settings-modal { position: fixed; inset: 0; z-index: 25; display: grid; place-items: center; padding: 20px; background: rgba(3, 7, 12, 0.78); }
+    .settings-modal[hidden] { display: none; }
+    .settings-dialog { display: grid; gap: 18px; width: min(560px, 100%); max-height: min(720px, calc(100vh - 40px)); overflow-y: auto; padding: 20px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); box-shadow: var(--shadow); }
+    .settings-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+    .settings-header p { margin-top: 4px; color: var(--muted); font-size: 0.78rem; }
+    .settings-close { width: 36px; height: 36px; padding: 0; border: 1px solid var(--line); border-radius: 8px; background: var(--subtle); color: var(--ink); font-weight: 850; }
+    .settings-close:hover, .settings-close:focus-visible { border-color: var(--blue); color: #71e4ec; outline: none; }
+    .settings-account { display: grid; gap: 4px; padding: 14px; border: 1px solid var(--line); border-radius: 8px; background: rgba(28, 36, 48, 0.7); }
+    .settings-account-label { color: var(--muted); font-size: 0.72rem; font-weight: 750; }
+    .settings-account-name { color: var(--ink); font-size: 1rem; font-weight: 850; }
+    .settings-account-email { color: #71e4ec; font-size: 0.8rem; overflow-wrap: anywhere; }
+    .settings-error { display: grid; gap: 6px; padding: 14px; border: 1px solid rgba(255, 123, 123, 0.5); border-radius: 8px; background: rgba(255, 123, 123, 0.08); }
+    .settings-error[hidden] { display: none; }
+    .settings-error-title { color: #ffb3b3; font-weight: 850; }
+    .settings-error-message, .settings-error-help { margin: 0; color: #ffcaca; font-size: 0.78rem; line-height: 1.45; overflow-wrap: anywhere; }
+    .settings-error-help { color: var(--muted); }
+    .settings-actions { display: flex; justify-content: flex-end; gap: 10px; }
     .connection-status { display: flex; align-items: center; gap: 12px; }
     .status-icon { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: rgba(83, 209, 143, 0.14); color: var(--green); font-weight: 900; }
     .status-label { font-weight: 800; }
-    .status-help { margin-top: 3px; color: var(--muted); font-size: 0.82rem; }
+    .status-help { display: block; margin-top: 3px; color: var(--muted); font-size: 0.82rem; }
     .connect-button, .primary-button { border: 1px solid var(--blue); background: var(--blue); color: #fff; }
     .logout-button { border-color: rgba(255, 123, 123, 0.42); background: rgba(255, 123, 123, 0.08); color: #ff9b9b; }
     .logout-button:hover, .logout-button:focus-visible { border-color: rgba(255, 123, 123, 0.72); background: rgba(255, 123, 123, 0.14); color: #ffb3b3; }
@@ -188,6 +209,8 @@
       .cache-settings-heading { align-items: flex-start; flex-direction: column; gap: 4px; }
       .cache-settings-row { align-items: stretch; flex-direction: column; }
       .cache-settings-field input, .cache-settings-field select, .cache-settings-row button { width: 100%; }
+      .settings-actions { justify-content: stretch; flex-direction: column-reverse; }
+      .settings-actions > * { width: 100%; }
     }
     @media (max-width: 400px) { .video-grid { grid-template-columns: 1fr; } }
   </style>
@@ -202,22 +225,12 @@
       <a class="outline-button" href="/" aria-label="Go to Rakashii Tools">Rakashii Tools</a>
     </header>
 
-    <section class="connection-card" aria-live="polite">
-      <div class="connection-status">
+    <section class="connection-card" id="connectionCard" aria-live="polite">
+      <button class="connection-status-button" id="connectionStatusButton" type="button" title="Open Google Drive account settings">
         <span class="status-icon" id="statusIcon" aria-hidden="true">OK</span>
-        <div><div class="status-label" id="status">Checking Google Drive connection...</div><div class="status-help" id="statusHelp">Your videos stay in Google Drive.</div></div>
-      </div>
-      <div class="section-actions"><a class="connect-button" id="connect" href="/api/drive?action=auth">Connect Google Drive</a><a class="outline-button logout-button" id="logout" href="/api/drive?action=logout" hidden>Log out</a></div>
-    </section>
-
-    <section class="cache-settings-card" aria-labelledby="cache-settings-title">
-      <div class="cache-settings-heading"><h2 id="cache-settings-title">Temporary source cache</h2><p>Reuse downloaded videos on this device for easier clipping.</p></div>
-      <div class="cache-settings-row">
-        <label class="cache-settings-field" for="sourceCacheLimitInput">Cache limit<input id="sourceCacheLimitInput" type="number" min="64" max="100" step="0.25" inputmode="decimal"></label>
-        <label class="cache-settings-field" for="sourceCacheLimitUnit">Unit<select id="sourceCacheLimitUnit"><option value="MB">MB</option><option value="GB">GB</option></select></label>
-        <button class="outline-button" id="saveSourceCacheLimit" type="button">Save cache limit</button>
-      </div>
-      <p class="cache-settings-status" id="sourceCacheSettingsStatus" aria-live="polite"></p>
+        <span><span class="status-label" id="status">Checking Google Drive connection...</span><span class="status-help" id="statusHelp">Your videos stay in Google Drive.</span></span>
+      </button>
+      <div class="section-actions"><a class="connect-button" id="connect" href="/api/drive?action=auth">Connect Google Drive</a><button class="outline-button" id="driveSettingsButton" type="button">Settings</button></div>
     </section>
 
     <section class="public-link-card" aria-labelledby="public-link-title">
@@ -239,8 +252,37 @@
       <div class="video-grid" id="videoGrid" aria-live="polite"><div class="empty-state">Loading videos...</div></div>
     </section>
 
-    <p id="msg" aria-live="polite"></p>
+  <p id="msg" aria-live="polite"></p>
   </main>
+
+  <div class="settings-modal" id="settingsModal" hidden>
+    <section class="settings-dialog" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+      <header class="settings-header">
+        <div><h2 id="settingsTitle">Settings</h2><p>Google Drive account and temporary storage</p></div>
+        <button class="settings-close" id="closeSettings" type="button" aria-label="Close settings">X</button>
+      </header>
+      <div class="settings-account">
+        <span class="settings-account-label">Google Drive account</span>
+        <strong class="settings-account-name" id="settingsAccountName">Not connected</strong>
+        <span class="settings-account-email" id="settingsAccountEmail">Sign in to see your account.</span>
+      </div>
+      <div class="settings-error" id="settingsError" hidden>
+        <strong class="settings-error-title">Google Drive needs attention</strong>
+        <p class="settings-error-message" id="settingsErrorMessage"></p>
+        <p class="settings-error-help">Please log in again, then refresh this page. Your Drive files are not deleted.</p>
+      </div>
+      <section class="cache-settings-card" aria-labelledby="cache-settings-title">
+        <div class="cache-settings-heading"><h2 id="cache-settings-title">Temporary source cache</h2><p>Reuse downloaded videos on this device.</p></div>
+        <div class="cache-settings-row">
+          <label class="cache-settings-field" for="sourceCacheLimitInput">Cache limit<input id="sourceCacheLimitInput" type="number" min="64" max="100" step="0.25" inputmode="decimal"></label>
+          <label class="cache-settings-field" for="sourceCacheLimitUnit">Unit<select id="sourceCacheLimitUnit"><option value="MB">MB</option><option value="GB">GB</option></select></label>
+          <button class="outline-button" id="saveSourceCacheLimit" type="button">Save cache limit</button>
+        </div>
+        <p class="cache-settings-status" id="sourceCacheSettingsStatus" aria-live="polite"></p>
+      </section>
+      <div class="settings-actions"><a class="outline-button logout-button" id="logout" href="/api/drive?action=logout" hidden>Log out</a><button class="outline-button" id="settingsDone" type="button">Done</button></div>
+    </section>
+  </div>
 
   <div class="video-modal" id="videoModal" hidden>
     <section class="video-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
@@ -292,8 +334,18 @@
     const status = document.querySelector("#status");
     const statusHelp = document.querySelector("#statusHelp");
     const statusIcon = document.querySelector("#statusIcon");
+    const connectionCard = document.querySelector("#connectionCard");
+    const connectionStatusButton = document.querySelector("#connectionStatusButton");
     const connect = document.querySelector("#connect");
+    const driveSettingsButton = document.querySelector("#driveSettingsButton");
     const logout = document.querySelector("#logout");
+    const settingsModal = document.querySelector("#settingsModal");
+    const closeSettingsButton = document.querySelector("#closeSettings");
+    const settingsDoneButton = document.querySelector("#settingsDone");
+    const settingsAccountName = document.querySelector("#settingsAccountName");
+    const settingsAccountEmail = document.querySelector("#settingsAccountEmail");
+    const settingsError = document.querySelector("#settingsError");
+    const settingsErrorMessage = document.querySelector("#settingsErrorMessage");
     const refreshButton = document.querySelector("#refresh");
     const myDriveTab = document.querySelector("#myDriveTab");
     const sharedDriveTab = document.querySelector("#sharedDriveTab");
@@ -345,6 +397,8 @@
     const startHandleLabel = document.querySelector("#startHandleLabel");
     const endHandleLabel = document.querySelector("#endHandleLabel");
     let selectedFile = null;
+    let driveAccount = null;
+    let driveAuthError = "";
     let previewFile = null;
     let previewDuration = 30;
     let activeSource = "my-drive";
@@ -511,14 +565,48 @@
         report(status.progress || 40, `Trimming with native FFmpeg${status.encoder ? ` (${status.encoder})` : ""}...`, file.name);
       }
     }
-    function setConnectionState(connected, message = "") {
-      status.textContent = connected ? "Google Drive connected" : message || "Not connected";
-      statusHelp.textContent = connected ? "Your videos stay in Google Drive." : "Connect your account to browse videos.";
-      statusIcon.textContent = connected ? "OK" : "!";
-      statusIcon.style.background = connected ? "#ecfdf3" : "#fff7ed";
-      statusIcon.style.color = connected ? "var(--green)" : "#c2410c";
-      connect.hidden = connected;
-      logout.hidden = !connected;
+    function firstName(displayName) {
+      return String(displayName || "").trim().split(/\s+/)[0] || "there";
+    }
+    function isDriveAuthError(message) {
+      return /invalid authentication|invalid credentials|unauthorized|unauthenticated|access token|login cookie|expected oauth|401/i.test(String(message || ""));
+    }
+    function setConnectionState(connected, message = "", details = {}) {
+      if (details.user) driveAccount = details.user;
+      if (connected || Object.prototype.hasOwnProperty.call(details, "authError")) driveAuthError = details.authError || "";
+      const authError = Boolean(details.authError || driveAuthError);
+      const accountName = driveAccount?.displayName || "Not connected";
+      const accountEmail = driveAccount?.emailAddress || (connected ? "Google Drive account" : "Sign in to see your account.");
+      status.textContent = connected ? `Hi, ${firstName(driveAccount?.displayName)}` : authError ? "Google Drive needs attention" : message || "Not connected";
+      statusHelp.textContent = connected ? `Google Drive connected${driveAccount?.emailAddress ? ` · ${driveAccount.emailAddress}` : ""}` : authError ? "Please log in again." : "Connect your account to browse videos.";
+      statusIcon.textContent = connected ? "OK" : authError ? "!" : "?";
+      statusIcon.style.background = connected ? "#ecfdf3" : authError ? "#fff1f2" : "#fff7ed";
+      statusIcon.style.color = connected ? "var(--green)" : authError ? "#dc2626" : "#c2410c";
+      statusIcon.title = authError ? "Google Drive authentication error. Click to see details." : "Open Google Drive account settings.";
+      connectionStatusButton.title = statusIcon.title;
+      connectionCard.classList.toggle("is-error", authError);
+      connect.hidden = connected && !authError;
+      connect.textContent = authError ? "Log in again" : "Connect Google Drive";
+      logout.hidden = !connected && !authError;
+      settingsAccountName.textContent = connected ? `Hi, ${firstName(driveAccount?.displayName)}` : accountName;
+      settingsAccountEmail.textContent = accountEmail;
+      settingsError.hidden = !authError;
+      settingsErrorMessage.textContent = driveAuthError || "Your Google Drive session is no longer valid.";
+    }
+    function openSettings() {
+      settingsModal.hidden = false;
+      showSourceCacheLimit();
+      closeSettingsButton.focus();
+    }
+    function closeSettings() {
+      settingsModal.hidden = true;
+    }
+    function handleDriveRequestError(error) {
+      const detail = error?.message || String(error || "");
+      if (isDriveAuthError(detail)) {
+        setConnectionState(false, "Google Drive needs attention", { authError: detail, user: driveAccount });
+      }
+      return detail;
     }
     function formatTime(seconds) {
       const value = Math.max(0, Number(seconds) || 0);
@@ -1761,7 +1849,8 @@
         if (requestId !== folderLoadSequence) return;
         folderGrid.innerHTML = "";
         renderFiles([]);
-        setMessage(error.message, true);
+        const detail = handleDriveRequestError(error);
+        setMessage(isDriveAuthError(detail) ? "Google Drive authentication expired. Open Settings and log in again." : detail, true);
       } finally {
         if (requestId === folderLoadSequence) {
           refreshButton.disabled = false;
@@ -1820,10 +1909,18 @@
         const response = await fetch("/api/drive?action=status", { cache: "no-store" });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || "Server error");
-        if (data.connected) { setConnectionState(true); load(); }
+        if (data.connected) { setConnectionState(true, "", { user: data.user }); load(); }
+        else if (data.authError) { setConnectionState(false, "Google Drive needs attention", { authError: data.authError, user: data.user }); setMessage("Please log in again to reconnect Google Drive.", true); }
         else if (!data.configured) { const missing = Array.isArray(data.missing) ? data.missing : ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "GOOGLE_REDIRECT_URI"]; setConnectionState(false, "Google OAuth is not configured"); statusHelp.textContent = `Add ${missing.join(", ")} to Vercel environment variables.`; }
         else setConnectionState(false);
-      } catch (error) { setConnectionState(false, "Could not reach Rakashii Tools"); statusHelp.textContent = "Check the deployed site and try again."; setMessage(error.message, true); }
+      } catch (error) {
+        const detail = handleDriveRequestError(error);
+        if (!isDriveAuthError(detail)) {
+          setConnectionState(false, "Could not reach Rakashii Tools");
+          statusHelp.textContent = "Check the deployed site and try again.";
+        }
+        setMessage(detail, true);
+      }
     }
     async function connectDesktopThroughBrowser() {
       if (connect.dataset.connecting === "true") return;
@@ -1858,9 +1955,18 @@
     myDriveTab.addEventListener("click", () => switchSource("my-drive"));
     sharedDriveTab.addEventListener("click", () => switchSource("shared"));
     refreshButton.addEventListener("click", load);
+    driveSettingsButton.addEventListener("click", openSettings);
+    connectionStatusButton.addEventListener("click", openSettings);
+    closeSettingsButton.addEventListener("click", closeSettings);
+    settingsDoneButton.addEventListener("click", closeSettings);
+    settingsModal.addEventListener("click", event => { if (event.target === settingsModal) closeSettings(); });
     closePreviewButton.addEventListener("click", closePreview);
     videoModal.addEventListener("click", event => { if (event.target === videoModal) closePreview(); });
-    document.addEventListener("keydown", event => { if (event.key === "Escape" && !videoModal.hidden) closePreview(); });
+    document.addEventListener("keydown", event => {
+      if (event.key !== "Escape") return;
+      if (!videoModal.hidden) closePreview();
+      else if (!settingsModal.hidden) closeSettings();
+    });
     previewVideo.addEventListener("loadedmetadata", () => {
       previewDuration = Number.isFinite(previewVideo.duration) ? previewVideo.duration : 30;
       startRange.max = previewDuration;
