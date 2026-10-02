@@ -187,6 +187,9 @@
     .clip-estimate-note { grid-column: 1 / -1; color: #748396; font-size: 0.62rem; }
     .timeline-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 10px; }
     .clip-estimate-action { flex: 0 1 160px; min-width: 135px; min-height: 34px; padding: 0 8px; border: 1px solid #2d3948; border-radius: 7px; background: #151b23; }
+    .render-preview-button { min-height: 34px; min-width: 112px; padding: 0 9px; border-color: rgba(45, 183, 196, 0.48); background: linear-gradient(90deg, rgba(45, 183, 196, 0.3) var(--render-progress, 0%), rgba(45, 183, 196, 0.08) var(--render-progress, 0%)); color: #71e4ec; font-size: 0.72rem; white-space: nowrap; }
+    .render-preview-button.is-rendered { border-color: rgba(83, 209, 143, 0.5); background: rgba(83, 209, 143, 0.12); color: #8af0b0; }
+    .render-preview-button.is-rendered:hover, .render-preview-button.is-rendered:focus-visible { border-color: rgba(255, 185, 66, 0.62); background: rgba(245, 185, 66, 0.14); color: #ffd477; }
     .quality-control { display: inline-flex; align-items: center; gap: 6px; color: #9ca8b8; font-size: 0.7rem; font-weight: 750; }
     .quality-control select { height: 34px; padding: 0 26px 0 8px; border: 1px solid #385064; border-radius: 7px; background: #1c2430; color: #f2f6fb; font: inherit; font-weight: 750; }
     .quality-control select:focus { border-color: #71e4ec; outline: none; box-shadow: 0 0 0 2px rgba(113, 228, 236, 0.13); }
@@ -239,6 +242,7 @@
       .clip-estimates { grid-template-columns: 1fr; }
       .clip-estimate-note { grid-column: auto; }
       .timeline-actions { justify-content: stretch; flex-wrap: wrap; }
+      .render-preview-button { flex: 1 1 100%; width: 100%; }
       .timeline-actions .quality-control { flex: 1 1 calc(50% - 6px); min-width: 0; }
       .timeline-actions .quality-control select { min-width: 0; flex: 1; }
       .clip-estimate-action, .timeline-actions .primary-button { flex: 1 1 100%; width: 100%; }
@@ -427,7 +431,7 @@
             <div class="clip-estimate"><span>Estimated trim time</span><strong id="estimatedTrimTime">Calculating...</strong></div>
             <span class="clip-estimate-note" id="estimateNote">Approximate values based on the source video and selected quality.</span>
           </div>
-          <div class="timeline-actions"><label class="quality-control" for="qualitySelect">Quality<select id="qualitySelect" aria-label="Output quality"><option value="original">Original (no re-encode)</option><option value="high">High (better detail)</option><option value="balanced">Balanced</option><option value="smaller">Smaller file</option></select></label><label class="quality-control" for="powerSelect">Device power<select id="powerSelect" aria-label="Device processing power"><option value="0.5">50% (cooler)</option><option value="0.75">75% (recommended)</option><option value="1" selected>100% (fastest)</option></select></label><div class="clip-estimate clip-estimate-action" aria-live="polite"><span>Estimated clip size</span><strong id="estimatedClipSize">Calculating...</strong></div><button class="primary-button" id="modalClipButton" type="button">Clip selected part</button></div>
+          <div class="timeline-actions"><button class="outline-button render-preview-button" id="renderPreviewButton" type="button" title="Download the source for smooth playback"><span id="renderPreviewLabel">Prepare preview</span></button><label class="quality-control" for="qualitySelect">Quality<select id="qualitySelect" aria-label="Output quality"><option value="original">Original (no re-encode)</option><option value="high">High (better detail)</option><option value="balanced">Balanced</option><option value="smaller">Smaller file</option></select></label><label class="quality-control" for="powerSelect">Device power<select id="powerSelect" aria-label="Device processing power"><option value="0.5">50% (cooler)</option><option value="0.75">75% (recommended)</option><option value="1" selected>100% (fastest)</option></select></label><div class="clip-estimate clip-estimate-action" aria-live="polite"><span>Estimated clip size</span><strong id="estimatedClipSize">Calculating...</strong></div><button class="primary-button" id="modalClipButton" type="button">Clip selected part</button></div>
         </div>
       </div>
     </section>
@@ -488,6 +492,8 @@
     const estimatedClipSize = document.querySelector("#estimatedClipSize");
     const estimatedTrimTime = document.querySelector("#estimatedTrimTime");
     const estimateNote = document.querySelector("#estimateNote");
+    const renderPreviewButton = document.querySelector("#renderPreviewButton");
+    const renderPreviewLabel = document.querySelector("#renderPreviewLabel");
     const modalClipButton = document.querySelector("#modalClipButton");
     const qualitySelect = document.querySelector("#qualitySelect");
     const powerSelect = document.querySelector("#powerSelect");
@@ -530,6 +536,9 @@
     let directPreviewTried = false;
     let previewSourceLoadSequence = 0;
     let previewObjectUrl = "";
+    let renderPreviewState = "idle";
+    let renderPreviewHover = false;
+    let renderPreviewRequest = 0;
     const isLocalSelfHost = window.location.port === "4173" || ["localhost", "127.0.0.1"].includes(window.location.hostname);
     const isDesktopShell = new URLSearchParams(window.location.search).get("desktop") === "1";
     const desktopApiReady = isDesktopShell
@@ -986,32 +995,46 @@
       startPreviewLoadingStats();
       videoModal.hidden = false;
       document.body.style.overflow = "hidden";
+      renderPreviewRequest++;
+      setRenderPreviewState("idle");
+      void loadPreviewSource(true);
+      void refreshRenderPreviewState(file);
+      setMessage("Drag the handles to choose the clip.");
+    }
+    function previewResourceQuery(file) {
       const query = new URLSearchParams();
-      if (file.resourceKey) query.set("resourceKey", file.resourceKey);
-      if (file.public && file.mimeType) query.set("mimeType", file.mimeType);
-      const resourceQuery = query.toString() ? `?${query.toString()}` : "";
-      // Start with the range-aware proxy so shared Drive files use the same
-      // reliable path as trimming. Direct Drive playback remains a fallback.
-      directPreviewTried = false;
+      if (file?.resourceKey) query.set("resourceKey", file.resourceKey);
+      if (file?.public && file?.mimeType) query.set("mimeType", file.mimeType);
+      return query.toString() ? `?${query.toString()}` : "";
+    }
+    async function loadPreviewSource(preferCache = true) {
+      if (!previewFile) return;
+      const file = previewFile;
       const sourceLoadSequence = ++previewSourceLoadSequence;
+      directPreviewTried = false;
       releasePreviewObjectUrl();
       previewVideo.removeAttribute("src");
       previewVideo.load();
-      void (async () => {
-        const cachedBlob = await getCachedSourceBlob(file);
-        if (sourceLoadSequence !== previewSourceLoadSequence || videoModal.hidden) return;
-        if (cachedBlob) {
-          previewObjectUrl = URL.createObjectURL(cachedBlob);
-          previewVideo.src = previewObjectUrl;
-        } else {
-          previewVideo.src = `${proxyPreviewUrl(file)}${resourceQuery ? `&${resourceQuery.slice(1)}` : ""}`;
-        }
-        previewVideo.load();
-      })();
-      setMessage("Drag the handles to choose the clip.");
+      previewLoading.hidden = false;
+      startPreviewLoadingStats();
+      const cachedBlob = preferCache ? await getCachedSourceBlob(file) : null;
+      if (sourceLoadSequence !== previewSourceLoadSequence || videoModal.hidden) return;
+      if (cachedBlob) {
+        suppressBufferingIndicator = true;
+        previewLoading.hidden = true;
+        stopPreviewLoadingStats();
+        previewObjectUrl = URL.createObjectURL(cachedBlob);
+        previewVideo.src = previewObjectUrl;
+      } else {
+        suppressBufferingIndicator = false;
+        const resourceQuery = previewResourceQuery(file);
+        previewVideo.src = `${proxyPreviewUrl(file)}${resourceQuery ? `&${resourceQuery.slice(1)}` : ""}`;
+      }
+      previewVideo.load();
     }
     function closePreview() {
       previewSourceLoadSequence++;
+      renderPreviewRequest++;
       videoModal.hidden = true;
       document.body.style.overflow = "";
       previewVideo.pause();
@@ -1025,6 +1048,22 @@
       if (!previewObjectUrl) return;
       URL.revokeObjectURL(previewObjectUrl);
       previewObjectUrl = "";
+    }
+    function setRenderPreviewState(state, progress = 0) {
+      renderPreviewState = state;
+      renderPreviewButton.classList.toggle("is-rendered", state === "rendered");
+      renderPreviewButton.disabled = state === "rendering";
+      renderPreviewButton.style.setProperty("--render-progress", `${Math.max(0, Math.min(100, progress))}%`);
+      if (state === "rendering") {
+        renderPreviewLabel.textContent = `Preparing ${Math.round(progress)}%`;
+        renderPreviewButton.title = "Downloading the source for smooth playback";
+      } else if (state === "rendered") {
+        renderPreviewLabel.textContent = renderPreviewHover ? "Clear preview" : "Ready offline";
+        renderPreviewButton.title = "Clear preview cache";
+      } else {
+        renderPreviewLabel.textContent = "Prepare preview";
+        renderPreviewButton.title = "Download the source for smooth playback";
+      }
     }
     function createProcessingCard(fileName) {
       const card = document.createElement("article");
@@ -1902,6 +1941,56 @@
         storeMemorySourceCache(file, data);
       }
     }
+    async function clearSourceCache(file) {
+      if (!file) return;
+      const key = sourceCacheKey(file);
+      const memoryEntry = sourceMemoryCache.get(key);
+      if (memoryEntry) {
+        sourceMemoryCacheBytes = Math.max(0, sourceMemoryCacheBytes - (memoryEntry.data?.byteLength || 0));
+        sourceMemoryCache.delete(key);
+      }
+      const cache = await openBrowserCache(SOURCE_CACHE_NAME);
+      if (!cache) return;
+      try { await cache.delete(sourceCacheUrl(file)); } catch {}
+    }
+    async function refreshRenderPreviewState(file) {
+      const cached = await getCachedSourceBlob(file);
+      if (previewFile === file && !videoModal.hidden) setRenderPreviewState(cached ? "rendered" : "idle");
+    }
+    async function preparePreview() {
+      const file = previewFile;
+      if (!file || renderPreviewState === "rendering") return;
+      if (renderPreviewState === "rendered") {
+        const request = ++renderPreviewRequest;
+        setRenderPreviewState("idle");
+        await clearSourceCache(file);
+        if (request === renderPreviewRequest && previewFile === file && !videoModal.hidden) {
+          await loadPreviewSource(false);
+          setMessage("Preview cache cleared. Playback will use the Drive stream again.");
+        }
+        return;
+      }
+      const request = ++renderPreviewRequest;
+      setRenderPreviewState("rendering", 0);
+      try {
+        const cached = await getCachedSourceBlob(file);
+        if (!cached) {
+          await downloadForClient(file, progress => {
+            if (request === renderPreviewRequest) setRenderPreviewState("rendering", progress);
+          }, 0, 100);
+        }
+        if (request !== renderPreviewRequest || previewFile !== file || videoModal.hidden) return;
+        const stored = await getCachedSourceBlob(file);
+        if (!stored) throw new Error("The browser could not save this video in its cache. Lower the cache limit or free browser storage.");
+        setRenderPreviewState("rendered", 100);
+        await loadPreviewSource(true);
+        setMessage("Preview ready offline. Playback will not need Drive buffering.");
+      } catch (error) {
+        if (request !== renderPreviewRequest) return;
+        setRenderPreviewState("idle");
+        setMessage(error?.message || "Could not prepare the preview cache.", true);
+      }
+    }
     async function runTrimJob(job) {
       let rejectCancellation;
       job.cancelPromise = new Promise((_, reject) => { rejectCancellation = reject; });
@@ -2457,6 +2546,15 @@
     });
     modalClipButton.addEventListener("click", () => {
       startClipJob(previewFile, Number(startRange.value), Number(endRange.value), qualitySelect.value, powerSelect.value);
+    });
+    renderPreviewButton.addEventListener("click", preparePreview);
+    renderPreviewButton.addEventListener("pointerenter", () => {
+      renderPreviewHover = true;
+      if (renderPreviewState === "rendered") renderPreviewLabel.textContent = "Clear preview";
+    });
+    renderPreviewButton.addEventListener("pointerleave", () => {
+      renderPreviewHover = false;
+      if (renderPreviewState === "rendered") renderPreviewLabel.textContent = "Ready offline";
     });
     openPublicLinkButton.addEventListener("click", openPublicLink);
     publicLink.addEventListener("keydown", event => { if (event.key === "Enter") openPublicLink(); });
